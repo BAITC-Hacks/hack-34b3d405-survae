@@ -44,7 +44,7 @@ $('message-input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKe
 $('message-input').addEventListener('input',e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,120)+'px'});
 $('open-cart').onclick=openCart;$('close-cart').onclick=closeCart;$('drawer-backdrop').onclick=closeCart;
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCart();if(e.key==='Tab'&&!$('cart-drawer').hidden){const nodes=[...$('cart-drawer').querySelectorAll('button:not(:disabled),a[href]')];const first=nodes[0],last=nodes.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}});
-$('new-chat').onclick=()=>{$('messages').replaceChildren();$('welcome').hidden=false;$('message-input').focus()};
+$('new-chat').onclick=async()=>{if(busy)return;try{await api('/api/chat/reset',{});$('messages').replaceChildren();attachment=null;renderAttachment();$('welcome').hidden=false;$('message-input').focus()}catch(e){toast(e.message)}};
 document.addEventListener('click',e=>{
  const prompt=e.target.closest('[data-prompt]');if(prompt){send(prompt.dataset.prompt);return}
  const suggestion=e.target.closest('[data-suggestion]');if(suggestion){const demo=state?.catalog.mode==='demo';send(suggestion.dataset.suggestion==='stock'?(demo?'Есть DEMO-C16-A?':'Есть 200300285_?'):(demo?'Подбери аналог DEMO-C16-Z':'Подбери аналог ярп4520'));return}

@@ -199,6 +199,17 @@ class ChatInput(BaseModel):
     attachment_id:str|None=Field(default=None,max_length=100)
 
 
+@app.post("/api/chat/reset")
+async def reset_chat(request:Request):
+    s=request.state.session
+    async with s["lock"]:
+        s["history"]=[]
+        s["last_products"]=[]
+        s["attachments"]={}
+        s["pending"]=None
+        return response(s,"Начат новый диалог.")
+
+
 @app.post("/api/chat")
 async def chat(body:ChatInput,request:Request):
     s=request.state.session
