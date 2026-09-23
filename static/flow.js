@@ -12,10 +12,7 @@
  function canConfirm(proposal,activeId,now=Date.now()){
   return !!proposal&&proposal.id===activeId&&Number.isFinite(proposal.expires_at)&&proposal.expires_at*1000>now;
  }
- function needsContextChoice(context,message){
-  return !!context?.kit && !context.options?.includes(message) && !/^(да|нет|отмена|подтверждаю)[.!?]*$/i.test(message.trim());
- }
- const api={labels,step,canConfirm,needsContextChoice};
+ const api={labels,step,canConfirm};
  if(typeof module!=='undefined')module.exports=api;
  else root.ShoppingFlow=api;
 })(typeof window==='undefined'?{}:window);
