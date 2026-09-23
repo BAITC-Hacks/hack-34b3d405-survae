@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field, StrictBool, AliasChoices, field_validator
 
 from app.catalog import ROOT, Catalog, CITY_NAMES, public_product, stock_for
 from app.commerce import new_session, cart_view, prepare, confirm, CommerceError
-from app.ai import understand
+from app.ai import understand, verify_key, compose_reply
 from app.attachments import extract, MAX_BYTES
 from app.kits import handle_kit
 
@@ -259,6 +259,7 @@ async def reset_chat(request:Request):
         s["attachments"]={}
         s["pending"]=None
         s["kit"]=None
+        s["ai_clarification"]=False
         return response(s,"Начат новый диалог.")
 
 
@@ -281,7 +282,7 @@ async def chat(body:ChatInput,request:Request):
                 s["city"] = city.capitalize()
                 s["pending"] = None
         if body.action == "reset":
-            s.update(pending=None, history=[], last_products=[], kit=None)
+            s.update(pending=None, history=[], last_products=[], kit=None, ai_clarification=False)
             return response(s,"Новый диалог. Опишите задачу, например: хочу подсветку кухни.",
                             stage="clarification", options=["Хочу подсветку кухни"])
         if body.action == "cancel":
@@ -296,7 +297,7 @@ async def chat(body:ChatInput,request:Request):
         message=body.message.strip()
         normal=re.sub(r"[\s,!?.]+"," ",message.lower()).strip()
         if (normal in {"отмена","отмени","не добавляй","не надо","жоқ"}
-                or (normal == "нет" and (s["pending"] or not s.get("kit")))
+                or (normal == "нет" and (s["pending"] or (not s.get("kit") and not s.get("ai_clarification"))))
                 or "не добавляй" in normal):
             s["pending"]=None
             return response(s,"Отменено. Корзина не изменилась.")
@@ -315,14 +316,17 @@ async def chat(body:ChatInput,request:Request):
         if attachment and engine!="openai" and attachment.get("text"):
             plan["query"]=attachment["text"][:1000]
         intent=plan["intent"]
+        s["ai_clarification"] = intent == "clarify"
         query=plan.get("query") or message
         chosen=[]
         if plan.get("product_id"):
             p=await catalog.detail(plan["product_id"])
             chosen=[p] if p else []
-        if not chosen and (intent not in {"greeting","conditions"} or plan.get("topic") == "minimum"):
+        if not chosen and (intent not in {"greeting","conditions","clarify"} or plan.get("topic") == "minimum"):
             chosen=await catalog.search(query)
-        if intent=="greeting":
+        if intent=="clarify":
+            result=response(s,plan.get("question") or "Что вы хотите сделать и что у вас уже есть?",engine=engine,stage="clarification")
+        elif intent=="greeting":
             result=response(s,"Здравствуйте! Подберу товар по артикулу или характеристикам, проверю наличие и помогу собрать корзину. Что ищете?",engine=engine)
         elif intent=="conditions":
             source=[{"title":"Оплата и доставка ekt.kz","url":"https://ekt.kz/checkout-delivery/"}]
@@ -356,6 +360,14 @@ async def chat(body:ChatInput,request:Request):
                 result=response(s,"Ссылки на документы указаны в карточках." if has else "В полученных данных сертификаты не указаны. Подтвердить их наличие не могу; запросите документы у менеджера.",chosen,engine=engine)
             else:
                 result=response(s, "Вот сравнение по данным каталога." if intent=="compare" else f"Нашёл подходящие позиции. Наличие показано для города {s['city']}.",chosen,engine=engine)
+        # Keep deterministic commerce/certificate answers and confirmation unchanged.
+        if engine == "openai" and intent not in {"conditions", "clarify", "propose"} and plan.get("topic") != "certificate":
+            try:
+                explanation = await compose_reply(message, s["history"], {
+                    "result": result, "catalog_mode": catalog.mode})
+                result["message"] = explanation + "\n\n" + result["message"]
+            except Exception:
+                result["engine"] = "fallback"
         s["history"]=(s["history"]+[{"role":"user","text":message},{"role":"assistant","text":result["message"]}])[-12:]
         return result
 
@@ -379,9 +391,13 @@ async def save_key(body:SetupInput,request:Request):
     if not local_setup_allowed(request):raise HTTPException(404)
     if "\n" in body.api_key or "\r" in body.api_key or not body.api_key.startswith("sk-"):
         raise HTTPException(400,"Проверьте API-ключ.")
-    os.environ["OPENAI_API_KEY"]=body.api_key
+    try:
+        await verify_key(body.api_key)
+    except ValueError as exc:
+        raise HTTPException(400,str(exc)) from None
     env_path=ROOT/".env"
     env_path.touch(mode=0o600,exist_ok=True)
     os.chmod(env_path,0o600)
     set_key(str(env_path),"OPENAI_API_KEY",body.api_key)
+    os.environ["OPENAI_API_KEY"]=body.api_key
     return {"ok":True}

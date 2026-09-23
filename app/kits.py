@@ -4,6 +4,7 @@ The demo has one fully specified modular lighting system. Live mode never uses
 demo SKUs: missing system/connector/included-parts data yields an unresolved kit.
 """
 import re
+import os
 
 from app.ai import extract_kit_slots
 from app.catalog import public_product, stock_for, number
@@ -124,6 +125,8 @@ async def handle_kit(catalog, session, message):
     if not active and not starts:
         return None
     if not active and not re.search(r"подсвет|кух", lower):
+        if os.getenv("OPENAI_API_KEY"):
+            return None  # Let AI clarify general tasks without forcing kitchen lighting.
         return {"text":"Опишите задачу. Сейчас пошагово поддерживается подсветка кухни на 1–4 м в сухом месте с готовой розеткой. Для остальных задач доступна консультация по каталогу.",
                 "stage":"clarification", "options":["Хочу подсветку кухни"], "engine":"local"}
     if active is None:

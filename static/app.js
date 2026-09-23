@@ -6,7 +6,7 @@ const quantity=value=>new Intl.NumberFormat('ru-RU',{maximumFractionDigits:3}).f
 const link=url=>typeof url==='string'&&(url.startsWith('https://')||url.startsWith('/static/'))?esc(url):'#';
 let csrf='',state=null,busy=false,attachment=null,toastTimer=null;
 async function api(path,body,method='POST'){
- const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),25000);
+ const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),50000);
  const options={method,signal:controller.signal,headers:{'X-CSRF-Token':csrf}};
  if(body instanceof FormData)options.body=body;
  else if(body!==undefined){options.headers['Content-Type']='application/json';options.body=JSON.stringify(body)}
