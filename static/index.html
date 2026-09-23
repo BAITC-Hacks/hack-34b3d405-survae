@@ -5,7 +5,7 @@
 <aside class="sidebar">
   <a class="brand" href="/" aria-label="EKT Ассистент, главная"><span class="brand-icon">ϟ</span><span>EKT<span class="brand-dot">.</span></span><span class="brand-by">by SURVAE</span></a>
   <div class="sidebar-label">ВАШ ПОМОЩНИК В КАТАЛОГЕ</div>
-  <button class="nav-item active" id="new-chat"><span class="nav-icon">✧</span>Консультант<span class="nav-badge">AI</span></button>
+  <button class="nav-item active" id="new-chat"><span class="nav-icon">✧</span>Новый диалог<span class="nav-badge">＋</span></button>
   <button class="nav-item" data-prompt="Какие условия доставки?"><span class="nav-icon">▤</span>Доставка и оплата</button>
   <button class="nav-item beginner-nav" data-start-guide><span class="nav-icon">✦</span>Не знаю, что выбрать</button><div class="sidebar-label second-label">С ЧЕМ ПОМОЧЬ</div>
   <button class="side-prompt" data-prompt="Помоги подобрать автоматический выключатель">Автоматические выключатели <span>↗</span></button>
@@ -16,7 +16,8 @@
 </aside>
 <main class="workspace">
   <header class="topbar"><div class="page-title"><span class="mobile-logo">ϟ</span><span>Консультант <small>Электротехника, понятным языком</small></span></div><div class="top-actions"><label class="city-select"><span aria-hidden="true">⌖</span><select id="city" aria-label="Город наличия"><option>Астана</option><option>Алматы</option><option>Шымкент</option><option>Караганда</option><option>Атырау</option><option>Актау</option><option>Тараз</option><option>Усть-Каменогорск</option><option>Талдыкорган</option></select></label><button id="open-cart" class="cart-button"><span aria-hidden="true">▱</span><span class="cart-label">Корзина</span><span id="cart-count">0</span></button></div></header>
-  <div class="connection-bar"><div><i id="status-dot"></i><span id="catalog-status">Подключаем каталог…</span><span class="bar-divider">/</span><span id="ai-status">Проверяем помощника</span></div><a href="/setup" id="setup-link" hidden>Подключить AI ↗</a><span class="demo-cart-label">Демо-корзина</span></div>
+  <div class="connection-bar"><div><i id="status-dot"></i><span id="catalog-status">Подключаем каталог…</span><span class="bar-divider">/</span><span id="ai-status">Проверяем помощника</span></div><a href="/setup" id="setup-link" hidden>Подключить AI ↗</a><span class="demo-cart-label">Демо-корзина</span><span id="mobile-build-version" class="mobile-build-version"></span></div>
+  <section class="shopping-flow" aria-label="Путь к покупке"><ol id="flow-steps"></ol><p id="flow-hint" role="status">Опишите, что хотите сделать. Названия товаров знать не обязательно.</p></section>
   <section id="conversation" class="conversation" aria-label="Диалог с консультантом" aria-live="polite">
     <div id="welcome" class="welcome">
       <div class="hero-symbol"><span>✧</span><i></i></div>
@@ -37,6 +38,7 @@
 </main>
 <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
 <aside id="cart-drawer" class="cart-drawer" role="dialog" aria-modal="true" aria-labelledby="cart-title" hidden><div class="drawer-header"><div><span class="eyebrow">ВАШ ВЫБОР</span><h2 id="cart-title">Корзина</h2></div><button id="close-cart" class="icon-button" aria-label="Закрыть корзину">×</button></div><div class="cart-notice">Демонстрационная корзина · заказы на ekt.kz не оформляются</div><div id="cart-items" class="cart-items"></div><div class="cart-bottom"><div class="cart-total"><span>Итого</span><strong id="cart-total">0 ₸</strong></div><p>Наличие и цена повторно проверяются при добавлении.</p><button id="clear-cart" class="secondary-button">Очистить корзину</button><a href="/cart" class="cart-permalink">Прямая ссылка на эту корзину ↗</a></div></aside>
+<dialog id="context-dialog" aria-labelledby="context-title"><h2 id="context-title">Это новая задача?</h2><p>Сейчас подбираем комплект. Укажите, как использовать ваше сообщение:</p><blockquote id="context-message"></blockquote><button id="context-new" class="primary-button" type="button">Новая задача — начать другой подбор</button><button id="context-continue" class="secondary-button" type="button">Это ответ на уточнение комплекта</button><button id="context-cancel" class="secondary-button" type="button">Вернуться к сообщению</button><p>При новой задаче старый подбор сбросится. Корзина и список покупок сохранятся.</p></dialog>
 <dialog id="selection-dialog" aria-labelledby="selection-title"><div class="selection-heading"><div><span class="eyebrow">ЕЩЁ НЕ В КОРЗИНЕ</span><h2 id="selection-title">Ваш список покупок</h2></div><button type="button" id="close-selection" class="icon-button" aria-label="Закрыть список">×</button></div><p>Измените количество или уберите лишнее. Цены и остатки проверит сервер перед подтверждением.</p><div id="selection-items"></div><button id="prepare-selection-dialog" type="button" class="primary-button">Проверить весь набор</button></dialog><div id="toast" class="toast" role="status" hidden></div>
-<script src="/static/app.js" defer></script><script src="/static/guide.js" defer></script>
+<script src="/static/flow.js" defer></script><script src="/static/app.js" defer></script><script src="/static/guide.js" defer></script>
 </body></html>
