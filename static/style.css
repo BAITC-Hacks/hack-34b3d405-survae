@@ -30,3 +30,5 @@
 @media(max-width:600px){.shopping-flow{padding:9px 16px}.shopping-flow ol{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px 5px}.shopping-flow li{font-size:10px;gap:4px}.shopping-flow li>span{width:18px;height:18px}.shopping-flow p{font-size:11px}.kit-summary{padding:14px}.proposal-buttons{flex-direction:column}.proposal-buttons button{width:100%}.connection-bar{flex-wrap:wrap;height:auto;min-height:34px;gap:4px}.connection-bar>div{flex-wrap:wrap}.composer-note span:last-child{display:none}}
 
 .mobile-build-version{display:none}@media(max-width:800px){.mobile-build-version{display:inline;font-size:10px;color:#60746c}}
+
+#context-dialog{border:1px solid #cbded1;border-radius:16px;padding:24px;width:min(500px,calc(100% - 28px));max-height:85dvh;overflow:auto;color:#244336}#context-dialog::backdrop{background:#102a2866}#context-dialog p{font-size:14px;line-height:1.6}#context-dialog blockquote{margin:16px 0;padding:12px;background:#f0f6f1;overflow-wrap:anywhere;white-space:pre-wrap;max-height:20vh;overflow:auto}#context-dialog button{display:block;width:100%;margin-top:10px}

@@ -17,3 +17,10 @@ test('old, expired and malformed proposals cannot be confirmed',()=>{
  assert.equal(flow.canConfirm({...p,expires_at:null},'p',0),false);
  assert.equal(flow.canConfirm(null,'p'),false);
 });
+test('new free-text requests cannot silently reuse an active kit',()=>{
+ const context={kit:{scenario:'kitchen_lighting'},options:['2 м']};
+ assert.equal(flow.needsContextChoice(context,'Нужна лампа E27'),true);
+ assert.equal(flow.needsContextChoice(context,'2 м'),false);
+ assert.equal(flow.needsContextChoice(context,'да'),false);
+ assert.equal(flow.needsContextChoice(null,'Нужна лампа E27'),false);
+});

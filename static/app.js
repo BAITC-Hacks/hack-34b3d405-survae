@@ -5,7 +5,7 @@ const money=value=>value===null?'Цена уточняется':new Intl.NumberF
 const quantity=value=>new Intl.NumberFormat('ru-RU',{maximumFractionDigits:3}).format(value);
 const link=url=>typeof url==='string'&&(url.startsWith('https://')||url.startsWith('/static/'))?esc(url):'#';
 let csrf='',state=null,busy=false,attachment=null,toastTimer=null;
-let activeProposal=null;
+let activeProposal=null,dialogContext=null,pendingContextMessage=null;
 function setStep(index,hint){
  $('flow-steps').innerHTML=ShoppingFlow.labels.map((label,i)=>`<li class="${i===index?'current':i<index?'done':''}" ${i===index?'aria-current="step"':''}><span>${i+1}</span>${esc(label)}</li>`).join('');
  $('flow-hint').textContent=hint;
@@ -39,6 +39,7 @@ function proposalMarkup(p){
  return `<section class="proposal"><h3>${heading}</h3><div class="proposal-city">${esc(p.city)} · демонстрационная корзина</div>${p.items.map(x=>`<div class="proposal-line"><span>${esc(x.name)}</span><span>${quantity(x.requested_quantity)} × ${money(x.price)}</span></div>`).join('')}<div class="proposal-total"><span>${add?'К добавлению':'Сумма позиций'}</span><span>${money(p.total)}</span></div><div class="proposal-buttons"><button class="primary-button" data-confirm="${esc(p.id)}">${add?'Подтвердить и добавить в корзину':'Подтвердить изменение корзины'}</button><button class="secondary-button" data-cancel>Отмена</button></div><p class="proposal-note">${add?'Перед добавлением ещё раз проверим цену и остаток. ':''}Нажмите кнопку только после проверки состава. Текст «да» не добавляет товары. Предложение действует 5 минут.</p></section>`;
 }
 function addResponse(data){
+ dialogContext={kit:data.kit||dialogContext?.kit,options:data.options||[]};
  invalidateProposal();activeProposal=data.proposal||null;
  const hints=['Опишите задачу или выберите сценарий.','Ответьте на вопрос ниже. Можно написать своими словами.','Сравните варианты и соберите свой список. Он ещё не в корзине.','Проверьте состав, количество и нерешённые вопросы перед подтверждением.','','Изменение корзины подтверждено сервером. Откройте её для проверки.'];
  setStep(ShoppingFlow.step(data),hints[ShoppingFlow.step(data)]);
@@ -53,14 +54,21 @@ function updateCart(cart){if(state)state.cart=cart;$('cart-count').textContent=q
 async function openCart(){try{updateCart(await api('/api/cart',undefined,'GET'));$('drawer-backdrop').hidden=false;$('cart-drawer').hidden=false;document.querySelector('.workspace').inert=true;document.querySelector('.sidebar').inert=true;$('close-cart').focus()}catch(e){toast('Не удалось обновить корзину: '+e.message)}}
 function closeCart(){if($('cart-drawer').hidden)return;document.querySelector('.workspace').inert=false;document.querySelector('.sidebar').inert=false;$('drawer-backdrop').hidden=true;$('cart-drawer').hidden=true;$('open-cart').focus()}
 async function withBusy(fn){if(busy)return;if(!csrf){toast('Сначала дождитесь подключения к серверу.');return;}busy=true;window.FrontendGuide?.lock(true);$('city').disabled=true;$('send-button').disabled=true;const thinking=document.createElement('div');thinking.className='thinking';thinking.setAttribute('role','status');$('conversation').setAttribute('aria-busy','true');thinking.innerHTML='<span>Проверяю данные каталога…</span>';$('messages').append(thinking);revealChat();scrollBottom();try{await fn()}catch(e){addError(e)}finally{thinking.remove();$('conversation').setAttribute('aria-busy','false');busy=false;window.FrontendGuide?.lock(false);$('city').disabled=false;$('send-button').disabled=false;scrollBottom()}}
-async function send(message){message=message.trim();if(!message||busy)return;if(!csrf){toast('Дождитесь подключения к серверу.');return;}if(!attachment&&window.FrontendGuide?.intercept(message))return;invalidateProposal();const current=attachment;addUser(message+(current?`\n📎 ${current.name}`:''));$('message-input').value='';$('message-input').style.height='auto';attachment=null;renderAttachment();await withBusy(async()=>{try{addResponse(await api('/api/chat',{message,attachment_id:current?.attachment_id||null}))}catch(e){$('message-input').value=message;attachment=current;renderAttachment();throw e}});$('message-input').focus()}
+async function send(message,contextChoice=null){message=message.trim();if(!message||busy)return;if(!csrf){toast('Дождитесь подключения к серверу.');return;}if(contextChoice===null&&ShoppingFlow.needsContextChoice(dialogContext,message)){
+ pendingContextMessage=message;$('context-message').textContent=message;$('context-dialog').showModal();return;
+}if(!attachment&&!contextChoice&&window.FrontendGuide?.intercept(message))return;invalidateProposal();const current=attachment;addUser(message+(current?`\n📎 ${current.name}`:''));$('message-input').value='';$('message-input').style.height='auto';attachment=null;renderAttachment();await withBusy(async()=>{try{if(contextChoice==='new'){
+ await api('/api/chat',{action:'reset'});dialogContext=null;window.FrontendGuide?.reset();
+}addResponse(await api('/api/chat',{message,attachment_id:current?.attachment_id||null}))}catch(e){$('message-input').value=message;attachment=current;renderAttachment();throw e}});$('message-input').focus()}
 function renderAttachment(){$('attachment-pill').hidden=!attachment;if(attachment)$('attachment-pill').innerHTML=`${esc(attachment.name)}<button id="remove-attachment" aria-label="Убрать вложение">×</button>`}
+$('context-new').onclick=()=>{const message=pendingContextMessage;pendingContextMessage=null;$('context-dialog').close();if(message)send(message,'new')};
+$('context-continue').onclick=()=>{const message=pendingContextMessage;pendingContextMessage=null;$('context-dialog').close();if(message)send(message,'continue')};
+$('context-cancel').onclick=()=>{$('context-dialog').close();pendingContextMessage=null};
 $('chat-form').addEventListener('submit',e=>{e.preventDefault();send($('message-input').value|| (attachment?'Подбери товары по вложению':''))});
 $('message-input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();$('chat-form').requestSubmit()}});
 $('message-input').addEventListener('input',e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,120)+'px'});
 $('open-cart').onclick=openCart;$('close-cart').onclick=closeCart;$('drawer-backdrop').onclick=closeCart;
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCart();if(e.key==='Tab'&&!$('cart-drawer').hidden){const nodes=[...$('cart-drawer').querySelectorAll('button:not(:disabled),a[href]')];const first=nodes[0],last=nodes.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}});
-$('new-chat').onclick=async()=>{if(busy)return;try{await api('/api/chat',{action:'reset'});invalidateProposal();setStep(0,'Начните новую задачу. Корзина и список сохранены.');window.FrontendGuide?.reset();$('messages').replaceChildren();attachment=null;renderAttachment();$('welcome').hidden=false;$('message-input').focus()}catch(e){toast(e.message)}};
+$('new-chat').onclick=async()=>{if(busy)return;try{await api('/api/chat',{action:'reset'});dialogContext=null;invalidateProposal();setStep(0,'Начните новую задачу. Корзина и список сохранены.');window.FrontendGuide?.reset();$('messages').replaceChildren();attachment=null;renderAttachment();$('welcome').hidden=false;$('message-input').focus()}catch(e){toast(e.message)}};
 document.addEventListener('click',e=>{
  const prompt=e.target.closest('[data-prompt]');if(prompt){send(prompt.dataset.prompt);return}
  const suggestion=e.target.closest('[data-suggestion]');if(suggestion){const demo=state?.catalog.mode==='demo';send(suggestion.dataset.suggestion==='stock'?(demo?'Есть DEMO-C16-A?':'Есть 200300285_?'):(demo?'Подбери аналог DEMO-C16-Z':'Подбери аналог ярп4520'));return}
