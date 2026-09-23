@@ -4,7 +4,6 @@ The demo has one fully specified modular lighting system. Live mode never uses
 demo SKUs: missing system/connector/included-parts data yields an unresolved kit.
 """
 import re
-import os
 
 from app.ai import extract_kit_slots
 from app.catalog import public_product, stock_for, number
@@ -113,7 +112,7 @@ async def build_kit(catalog, session, state):
     return kit, [module,supply]
 
 
-async def handle_kit(catalog, session, message):
+async def handle_kit(catalog, session, message, use_ai=True):
     lower = message.lower()
     # Product questions and purchase conditions are handled by the normal chat.
     if re.search(r"достав|оплат|сертифик|артикул|аналог|demo-", lower):
@@ -121,17 +120,12 @@ async def handle_kit(catalog, session, message):
     if re.search(r"новый комплект|другая задача", lower):
         session["kit"] = None
     active = session.get("kit")
-    starts = bool(re.search(r"подсвет|осве[тщ].*кух|комплект|не знаю.*куп|что.*нужно.*кух", lower))
+    starts = "подсвет" in lower and bool(re.search(r"кух|столеш|рабоч.*поверх", lower))
     if not active and not starts:
         return None
-    if not active and not re.search(r"подсвет|кух", lower):
-        if os.getenv("OPENAI_API_KEY"):
-            return None  # Let AI clarify general tasks without forcing kitchen lighting.
-        return {"text":"Опишите задачу. Сейчас пошагово поддерживается подсветка кухни на 1–4 м в сухом месте с готовой розеткой. Для остальных задач доступна консультация по каталогу.",
-                "stage":"clarification", "options":["Хочу подсветку кухни"], "engine":"local"}
     if active is None:
         session["kit"] = active = {"length_m":None, "outlet":None, "dry":None, "color":None}
-    changes, engine = await extract_kit_slots(message, active)
+    changes, engine = await extract_kit_slots(message, active) if use_ai else ({}, "local")
     changes.update(local_slots(message, active))
     active.update({k:v for k,v in changes.items() if v is not None})
     prompt = question(active)
