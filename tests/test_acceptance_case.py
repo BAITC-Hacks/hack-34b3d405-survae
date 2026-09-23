@@ -4,6 +4,7 @@ Run with --runxfail to see the failures. Remove each strict marker when the
 backend owner fixes it. All data is synthetic; no external API is called.
 """
 import io
+import importlib.util
 
 import pytest
 from fastapi.testclient import TestClient
@@ -24,7 +25,7 @@ def case_client(monkeypatch):
         yield client
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError,
+@pytest.mark.xfail(importlib.util.find_spec("app.lamps") is None, strict=True, raises=AssertionError,
                    reason="BE-01: free search does not enforce explicit product parameters")
 def test_explicit_lamp_parameters_exclude_incompatible_results(case_client):
     # Supply all three parameters; asking for missing power is valid behavior.
