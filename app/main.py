@@ -3,18 +3,21 @@ import os
 import re
 import secrets
 import time
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
+from typing import Literal
 
 from dotenv import load_dotenv, set_key
 from fastapi import FastAPI, Request, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field, StrictBool, AliasChoices, field_validator
 
 from app.catalog import ROOT, Catalog, CITY_NAMES, public_product, stock_for
 from app.commerce import new_session, cart_view, prepare, confirm, CommerceError
 from app.ai import understand
 from app.attachments import extract, MAX_BYTES
+from app.kits import handle_kit
 
 load_dotenv(ROOT / ".env")
 catalog = Catalog()
@@ -26,6 +29,8 @@ async def lifespan(app):
     task=asyncio.create_task(catalog.bootstrap())
     yield
     task.cancel()
+    with suppress(asyncio.CancelledError):
+        await task
     await catalog.client.aclose()
 
 
@@ -35,7 +40,13 @@ app.mount("/static",StaticFiles(directory=ROOT/"static"),name="static")
 
 @app.middleware("http")
 async def security(request, call_next):
-    if int(request.headers.get("content-length","0") or 0)>MAX_BYTES+1024*1024:
+    try:
+        size = int(request.headers.get("content-length", "0") or 0)
+    except ValueError:
+        return JSONResponse({"detail":"Некорректный Content-Length."}, status_code=400)
+    if size < 0:
+        return JSONResponse({"detail":"Некорректный Content-Length."}, status_code=400)
+    if size>MAX_BYTES+1024*1024:
         return JSONResponse({"detail":"Размер запроса превышает лимит."},status_code=413)
     session_id=request.cookies.get("survae_session")
     new = session_id not in sessions
@@ -51,7 +62,7 @@ async def security(request, call_next):
     if request.method in {"POST","PUT","PATCH","DELETE"}:
         origin=request.headers.get("origin")
         expected=str(request.base_url).rstrip("/")
-        if origin and origin!=expected:
+        if origin and origin not in {expected, *ALLOWED_ORIGINS}:
             return JSONResponse({"detail":"Недопустимый источник запроса."},status_code=403)
         if not secrets.compare_digest(request.headers.get("x-csrf-token",""),session["csrf"]):
             return JSONResponse({"detail":"Обновите страницу и повторите действие."},status_code=403)
@@ -67,6 +78,14 @@ async def security(request, call_next):
     return response
 
 
+# Outer middleware handles preflight and adds CORS headers to error responses.
+ALLOWED_ORIGINS = [o.strip().rstrip("/") for o in os.getenv(
+    "FRONTEND_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",") if o.strip()]
+app.add_middleware(CORSMiddleware, allow_origins=ALLOWED_ORIGINS,
+                   allow_credentials=True, allow_methods=["GET", "POST"],
+                   allow_headers=["Content-Type", "X-CSRF-Token"])
+
+
 @app.exception_handler(CommerceError)
 async def commerce_error(request,exc):
     return JSONResponse({"detail":str(exc),"cart":cart_view(request.state.session)},status_code=409)
@@ -74,7 +93,9 @@ async def commerce_error(request,exc):
 
 def response(session, text, products=None, **extra):
     return {"message":text,"products":[public_product(p,session["city"]) for p in products or []],
-            "cart":cart_view(session),"proposal":session["pending"],"city":session["city"],**extra}
+            "cart":cart_view(session),"proposal":session["pending"],"city":session["city"],
+            "stage":"proposal" if session["pending"] else "answer", "options":[],
+            "kit":None, "catalog_mode":catalog.mode, **extra}
 
 
 @app.get("/")
@@ -121,7 +142,10 @@ async def products(request:Request,q:str=""):
 
 @app.get("/api/cart")
 async def get_cart(request:Request):
-    return cart_view(request.state.session)
+    s = request.state.session
+    return {**cart_view(s), "csrf":s["csrf"], "city":s["city"],
+            "proposal":s["pending"], "catalog_mode":catalog.mode,
+            "ai_enabled":bool(os.getenv("OPENAI_API_KEY"))}
 
 
 class Line(BaseModel):
@@ -143,8 +167,9 @@ async def propose_cart(body:ProposalInput,request:Request):
 
 
 class ConfirmationInput(BaseModel):
-    action_id:str=Field(max_length=100)
-    confirmed:bool=False
+    action_id:str=Field(min_length=1,max_length=100,
+                        validation_alias=AliasChoices("proposal_id", "action_id"))
+    confirmed:StrictBool=False
 
 
 @app.post("/api/cart/confirm")
@@ -153,7 +178,7 @@ async def confirm_cart(body:ConfirmationInput,request:Request):
     async with s["lock"]:
         if not body.confirmed:
             raise HTTPException(400,"Необходимо явное подтверждение.")
-        return response(s,await confirm(catalog,s,body.action_id))
+        return response(s,await confirm(catalog,s,body.action_id),stage="cart_updated")
 
 
 @app.post("/api/cart/cancel")
@@ -188,15 +213,24 @@ def purchase_conditions(topic, products):
             return "Минимальная партия по данным каталога:\n"+"\n".join(f"• {p['article']}: {p['minimum']:g} ед." for p in products)
         return "Минимальная партия зависит от товара. Укажите артикул — проверю поле минимальной партии в каталоге."
     if topic=="payment":
-        return "По условиям ekt.kz: физлица могут оплатить банковской картой онлайн или при получении; юрлица — перечислением по счёту или в торговом зале. Платёжные данные в чате не запрашиваются. Точные способы для заказа подтвердит магазин."
+        return "По опубликованным условиям ekt.kz: физлица могут оплатить картой онлайн, наличными при получении либо наличными/через POS-терминал при самовывозе в торговом зале. Юрлица — перечислением по счёту либо наличными в торговом зале при самовывозе. Платёжные данные в чате не запрашиваются. Актуальные способы для заказа подтвердит магазин."
     if topic=="delivery":
         return "По условиям ekt.kz, согласованный с менеджером товар по Алматы доставляется в течение 48 часов. Стоимость и сроки доставки в другие города согласовываются с менеджером и зависят от адреса, веса и объёма. Доступен самовывоз. Наличие товара в городе не является обещанием срока доставки."
     return "Помогу проверить оплату, доставку и минимальную партию. Напишите интересующий вопрос и, если он о конкретной позиции, артикул."
 
 
 class ChatInput(BaseModel):
-    message:str=Field(min_length=1,max_length=4000)
+    message:str=Field(default="",max_length=4000)
     attachment_id:str|None=Field(default=None,max_length=100)
+    action:Literal["message", "propose", "cancel", "reset"]="message"
+    operation:Literal["add", "remove", "clear"]="add"
+    items:list[Line]=Field(default_factory=list,max_length=12)
+    city:str|None=Field(default=None,max_length=40)
+
+    @field_validator("message")
+    @classmethod
+    def strip_message(cls, value):
+        return value.strip()
 
 
 @app.post("/api/chat")
@@ -208,17 +242,45 @@ async def chat(body:ChatInput,request:Request):
         raise HTTPException(429,"Слишком много сообщений. Попробуйте через минуту.")
     s["calls"]=calls+[now]
     async with s["lock"]:
+        if body.city is not None:
+            city = body.city.strip().lower()
+            if city not in CITY_NAMES:
+                raise HTTPException(400,"Выберите поддерживаемый город.")
+            if city != s["city"].lower():
+                if s["cart"]:
+                    raise HTTPException(409,"Город нельзя изменить при непустой корзине.")
+                s["city"] = city.capitalize()
+                s["pending"] = None
+        if body.action == "reset":
+            s.update(pending=None, history=[], last_products=[], kit=None)
+            return response(s,"Новый диалог. Опишите задачу, например: хочу подсветку кухни.",
+                            stage="clarification", options=["Хочу подсветку кухни"])
+        if body.action == "cancel":
+            s["pending"] = None
+            return response(s,"Отменено. Корзина не изменилась.")
+        if body.action == "propose":
+            s["pending"] = None
+            await prepare(catalog,s,[line.model_dump() for line in body.items],body.operation)
+            return response(s,"Проверьте состав и количество. Подтвердите добавление кнопкой.")
+        if not body.message:
+            raise HTTPException(422,"Сообщение не должно быть пустым.")
         message=body.message.strip()
         normal=re.sub(r"[\s,!?.]+"," ",message.lower()).strip()
-        if normal in {"нет","отмена","отмени","не добавляй","не надо","жоқ"} or "не добавляй" in normal:
+        if (normal in {"отмена","отмени","не добавляй","не надо","жоқ"}
+                or (normal == "нет" and (s["pending"] or not s.get("kit")))
+                or "не добавляй" in normal):
             s["pending"]=None
             return response(s,"Отменено. Корзина не изменилась.")
-        if normal in {"да","да добавь","добавь","подтверждаю","да подтверждаю","да удалить","да очистить","иә қос"}:
-            if not s["pending"]:
-                return response(s,"Сначала выберите товар и количество — я покажу предложение для подтверждения.")
-            return response(s,await confirm(catalog,s,s["pending"]["id"]))
+        if normal in {"да","да добавь","добавь","подтверждаю","да подтверждаю","да удалить","да очистить","иә қос"} and s["pending"]:
+            return response(s,"Подтвердите конкретное предложение кнопкой. Сообщение само по себе корзину не меняет.")
         # A new substantive message invalidates an earlier confirmation context.
         s["pending"]=None
+        kit_result = await handle_kit(catalog, s, message)
+        if kit_result is not None:
+            result = response(s, **kit_result)
+            s["history"]=(s["history"]+[{"role":"user","text":message},
+                {"role":"assistant","text":result["message"]}])[-12:]
+            return result
         attachment=s["attachments"].pop(body.attachment_id,None) if body.attachment_id else None
         plan,engine=await understand(message,s["history"],s["last_products"],attachment)
         if attachment and engine!="openai" and attachment.get("text"):
@@ -229,7 +291,7 @@ async def chat(body:ChatInput,request:Request):
         if plan.get("product_id"):
             p=await catalog.detail(plan["product_id"])
             chosen=[p] if p else []
-        if not chosen and intent not in {"greeting","conditions"}:
+        if not chosen and (intent not in {"greeting","conditions"} or plan.get("topic") == "minimum"):
             chosen=await catalog.search(query)
         if intent=="greeting":
             result=response(s,"Здравствуйте! Подберу товар по артикулу или характеристикам, проверю наличие и помогу собрать корзину. Что ищете?",engine=engine)

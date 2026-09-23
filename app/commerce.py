@@ -13,7 +13,7 @@ class CommerceError(Exception):
 def new_session():
     return {"csrf": secrets.token_urlsafe(24), "city": "Астана", "cart": {}, "pending": None,
             "completed": [], "history": [], "last_products": [], "attachments": {},
-            "lock": asyncio.Lock(), "touched": time.time()}
+            "kit": None, "lock": asyncio.Lock(), "touched": time.time()}
 
 
 def cart_view(session):
@@ -25,6 +25,8 @@ def cart_view(session):
 
 
 async def prepare(catalog, session, requested, operation="add"):
+    # A failed new selection must not leave an old proposal confirmable.
+    session["pending"] = None
     if operation not in {"add", "remove", "clear"}:
         raise CommerceError("Неизвестная операция.")
     if not requested and operation != "clear":
@@ -97,6 +99,9 @@ async def confirm(catalog, session, action_id):
             if product["price"] != line["price"] or product["minimum"] != line["minimum"]:
                 session["pending"] = None
                 raise CommerceError("Цена или минимальная партия изменились. Требуется новое подтверждение.")
+            if product["attributes"] != line["attributes"] or product["warnings"] != line["warnings"]:
+                session["pending"] = None
+                raise CommerceError("Характеристики товара изменились. Проверьте совместимость и создайте новое предложение.")
             updated.append({**public_product(product,session["city"]),"cart_quantity":float(qty+existing)})
         for product in updated:
             session["cart"][product["id"]] = product

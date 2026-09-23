@@ -3,6 +3,7 @@
 The model never supplies prices, stock quantities or catalog attributes.
 """
 import asyncio
+import copy
 import json
 import os
 import re
@@ -63,7 +64,7 @@ def normalize_product(raw, mode="live"):
         props = {}
     attrs = {label: clean_html(props[key]) for key, label in PROPERTY_LABELS.items()
              if key in props and isinstance(props[key], (str, int, float)) and str(props[key]).strip()}
-    attrs.update(raw.get("attributes") or {})
+    attrs.update({str(k): clean_html(v) for k,v in (raw.get("attributes") or {}).items()})
     name = clean_html(raw.get("name", "Без названия"))
     warnings = list(raw.get("warnings") or [])
     named_current = re.search(r"(?<![\w.])([\d.,]+)\s*[аa](?!\w)", name.lower())
@@ -105,7 +106,8 @@ def stock_for(product, city):
 
 
 def public_product(product, city):
-    return {**product, "available": stock_for(product, city), "city": city}
+    # Proposals must snapshot nested characteristics, not share mutable catalog data.
+    return {**copy.deepcopy(product), "available": stock_for(product, city), "city": city}
 
 
 def terms(query):
@@ -174,7 +176,8 @@ class Catalog:
             self.load_demo()
 
     def load_demo(self):
-        raw = json.loads((ROOT / "data/demo_catalog.json").read_text())
+        raw = json.loads((ROOT / "data/demo_catalog.json").read_text(encoding="utf-8"))
+        raw += json.loads((ROOT / "data/demo_kits.json").read_text(encoding="utf-8"))
         self.items = {str(x["id"]): normalize_product(x, "demo") for x in raw}
 
     async def get_json(self, path="", params=None):
@@ -190,7 +193,7 @@ class Catalog:
         cache = ROOT / ".cache/catalog.json"
         try:
             if cache.exists():
-                raw = json.loads(cache.read_text())
+                raw = json.loads(cache.read_text(encoding="utf-8"))
                 self.items = {str(x["id"]): normalize_product(x) for x in raw}
             raw_items = []
             pages = min(100, max(1, int(os.getenv("CATALOG_PAGES", "20"))))
@@ -202,7 +205,7 @@ class Catalog:
                 if any(len(page.get("items", [])) < 20 for page in batch):
                     break
             cache.parent.mkdir(exist_ok=True)
-            cache.write_text(json.dumps(raw_items, ensure_ascii=False))
+            cache.write_text(json.dumps(raw_items, ensure_ascii=False), encoding="utf-8")
             self.error = None
         except Exception:
             self.error = "Каталог временно недоступен. Повторите запрос позже. Остатки не подменяются демонстрационными."
@@ -231,6 +234,10 @@ class Catalog:
 
     async def search(self, query, limit=5):
         scored = sorted(((search_score(p, query), p) for p in self.items.values()), key=lambda x:x[0], reverse=True)
+        exact = [p for score,p in scored if score >= 100]
+        if exact:
+            results = await asyncio.gather(*(self.detail(p["id"]) for p in exact[:limit]))
+            return [p for p in results if p]
         chosen = [p for score,p in scored if score > 0][:limit]
         if not chosen and str(query).isdigit():
             p = await self.detail(query)
