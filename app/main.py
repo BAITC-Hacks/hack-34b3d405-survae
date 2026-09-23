@@ -19,6 +19,7 @@ from app.commerce import new_session, cart_view, prepare, confirm, CommerceError
 from app.ai import understand, verify_key, compose_reply
 from app.attachments import extract, MAX_BYTES
 from app.kits import handle_kit
+from app.lamps import handle_lamp
 
 load_dotenv(ROOT / ".env")
 catalog = Catalog()
@@ -259,6 +260,7 @@ async def reset_chat(request:Request):
         s["attachments"]={}
         s["pending"]=None
         s["kit"]=None
+        s["lamp"]=None
         s["ai_clarification"]=False
         return response(s,"Начат новый диалог.")
 
@@ -282,7 +284,7 @@ async def chat(body:ChatInput,request:Request):
                 s["city"] = city.capitalize()
                 s["pending"] = None
         if body.action == "reset":
-            s.update(pending=None, history=[], last_products=[], kit=None, ai_clarification=False)
+            s.update(pending=None, history=[], last_products=[], kit=None, lamp=None, ai_clarification=False)
             return response(s,"Новый диалог. Опишите задачу, например: хочу подсветку кухни.",
                             stage="clarification", options=["Хочу подсветку кухни"])
         if body.action == "cancel":
@@ -305,6 +307,14 @@ async def chat(body:ChatInput,request:Request):
             return response(s,"Подтвердите конкретное предложение кнопкой. Сообщение само по себе корзину не меняет.")
         # A new substantive message invalidates an earlier confirmation context.
         s["pending"]=None
+        if body.attachment_id:
+            s["lamp"] = None  # Attachment interpretation belongs to the AI handler.
+        lamp_result = await handle_lamp(catalog, s, message) if not body.attachment_id else None
+        if lamp_result is not None:
+            result = response(s, **lamp_result)
+            s["history"]=(s["history"]+[{"role":"user","text":message},
+                {"role":"assistant","text":result["message"]}])[-12:]
+            return result
         kit_result = await handle_kit(catalog, s, message)
         if kit_result is not None:
             result = response(s, **kit_result)

@@ -13,7 +13,7 @@ class CommerceError(Exception):
 def new_session():
     return {"csrf": secrets.token_urlsafe(24), "city": "Астана", "cart": {}, "pending": None,
             "completed": [], "history": [], "last_products": [], "attachments": {},
-            "kit": None, "lock": asyncio.Lock(), "touched": time.time()}
+            "kit": None, "lamp": None, "lock": asyncio.Lock(), "touched": time.time()}
 
 
 def cart_view(session):
