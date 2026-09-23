@@ -39,7 +39,8 @@ def read_changes(text, state):
             if key == "power":
                 prefix = text[max(0, positive[0].start()-35):positive[0].start()]
                 maximum = re.search(r"(?:\bдо|не более|не больше|максим\w*|макс\.?|предел)\s*$", prefix)
-                changes["power_mode"] = "max" if maximum or state.get("awaiting") == "power" else "exact"
+                exact = re.search(r"(?:ровно|именно|точно)\s*$", prefix)
+                changes["power_mode"] = "exact" if exact else "max" if maximum or state.get("awaiting") == "power" else "exact"
         elif matches:
             changes[key] = None
             ambiguous.append(key)

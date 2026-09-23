@@ -95,9 +95,10 @@ def test_ai_free_reply_replaces_previous_kit(client, monkeypatch, question, answ
     assert reply["engine"] == "openai"
     assert not reply["products"] and reply["kit"] is None and reply["proposal"] is None
     assert reply["cart"]["count"] == 3
-    assert seen[0]  # Router sees the old context; answer history starts the new task.
+    assert seen[0]  # Router sees the old context; switching tools must not erase it.
     session = next(iter(main.sessions.values()))
-    assert session["history"][0]["text"] == question and len(session["history"]) == 2
+    assert session["history"][:-2] == seen[0]
+    assert session["history"][-2]["text"] == question
 
 
 def test_same_topic_general_followup_keeps_history(client, monkeypatch):

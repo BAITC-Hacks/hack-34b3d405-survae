@@ -27,10 +27,13 @@ def test_ai_clarification_keeps_history_and_empty_cart(client, monkeypatch):
         seen.append(list(history))
         return {'intent':'clarify', 'question':'Где нужен свет?', 'query':'', 'topic':'general'}, 'openai'
     monkeypatch.setattr(main, 'understand', understand)
-    for message in ['Не знаю, что купить', 'Да', 'Нет']:
+    async def explain(*args):
+        return 'Предварительно нужен подходящий источник света. Сверьте маркировку светильника.'
+    monkeypatch.setattr(main, 'compose_reply', explain)
+    for index, message in enumerate(['Не знаю, что купить', 'Да', 'Нет']):
         result = client.post('/api/chat', json={'message':message}).json()
-        assert result['stage'] == 'clarification'
-        assert result['message'] == 'Где нужен свет?'
+        assert result['stage'] == ('clarification' if index == 0 else 'answer')
+        assert result['message'] == 'Где нужен свет?' if index == 0 else 'Предварительная консультация' in result['message']
         assert result['cart']['count'] == 0
     assert len(seen[1]) == 2
 

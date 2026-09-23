@@ -20,7 +20,8 @@ from app.ai import understand, verify_key, compose_reply
 from app.attachments import extract, MAX_BYTES
 from app.kits import handle_kit
 from app.lamps import handle_lamp
-from app.dialogue import local_route
+from app.dialogue import local_route, remember, needs_dialogue_repair
+from app.specifications import resolve_specification
 
 load_dotenv(ROOT / ".env")
 catalog = Catalog()
@@ -285,7 +286,7 @@ async def chat(body:ChatInput,request:Request):
                 s["city"] = city.capitalize()
                 s["pending"] = None
         if body.action == "reset":
-            s.update(pending=None, history=[], last_products=[], kit=None, lamp=None, ai_clarification=False)
+            s.update(pending=None, history=[], last_products=[], kit=None, lamp=None, ai_clarification=False, attachments={})
             return response(s,"Начнём заново. Что вы хотите сделать или какой товар ищете?",
                             stage="clarification")
         if body.action == "cancel":
@@ -297,10 +298,12 @@ async def chat(body:ChatInput,request:Request):
             return response(s,"Проверьте состав и количество. Подтвердите добавление кнопкой.")
         if not body.message:
             raise HTTPException(422,"Сообщение не должно быть пустым.")
+        if body.attachment_id and body.attachment_id not in s["attachments"]:
+            raise HTTPException(400,"Вложение недоступно в текущей сессии или уже обработано. Прикрепите файл ещё раз.")
         message=body.message.strip()
         normal=re.sub(r"[\s,!?.]+"," ",message.lower()).strip()
         if (normal in {"отмена","отмени","не добавляй","не надо","жоқ"}
-                or (normal == "нет" and (s["pending"] or (not s.get("kit") and not s.get("ai_clarification"))))
+                or (normal == "нет" and s["pending"])
                 or "не добавляй" in normal):
             s["pending"]=None
             return response(s,"Отменено. Корзина не изменилась.")
@@ -310,19 +313,37 @@ async def chat(body:ChatInput,request:Request):
         s["pending"]=None
         attachment=s["attachments"].pop(body.attachment_id,None) if body.attachment_id else None
         plan,engine=await understand(message,s["history"],s["last_products"],attachment)
+        if attachment and attachment.get("structured_items") and plan["intent"] in {"propose", "search", "compare", "details"}:
+            # Direct table cells outrank lossy model extraction, including unknown rows.
+            plan["items"] = attachment["structured_items"]
+        specification = bool(plan.get("items")) and (bool(attachment) or len(plan["items"]) > 1)
         # Interpret the current message BEFORE invoking any specialised calculator.
         # Their session state is context, never an unconditional chat interceptor.
         route = plan.get("route", "general") if engine == "openai" else local_route(message, s)
-        if attachment or plan["intent"] in {"consult", "out_of_scope", "conditions", "greeting"}:
+        if attachment or specification or plan["intent"] in {"consult", "out_of_scope", "conditions", "greeting"}:
             route = "general"
         old_route = "kitchen_lighting" if s.get("kit") else "lamp" if s.get("lamp") else "general"
-        changed = plan.get("new_topic", False) or (old_route != "general" and route != old_route)
+        # Commercial questions temporarily suspend a calculator, not its selection.
+        commercial = plan["intent"] == "conditions" or plan.get("topic") == "certificate"
+        reference = plan.get("product_id") in {p["id"] for p in s["last_products"]}
+        literal_route = local_route(message, s)
+        literal_answer = (old_route != "general" and literal_route == old_route
+                          and not re.search(r"\b(?:почему|как|зачем|что|расскажи|объясни)\b", message, re.I))
+        if (not attachment and not commercial and
+                (literal_answer or (not specification and literal_route != "general"
+                 and plan["intent"] in {"search", "details", "clarify", "propose"}))):
+            route = literal_route
+            if literal_answer:
+                specification = False
+        # A classifier's new_topic flag must not reset literal parameter replies.
+        same_calculator = old_route != "general" and route == old_route
+        changed = not commercial and not reference and not same_calculator and (plan.get("new_topic", False) or (old_route != "general" and route != old_route))
         if changed:
-            s.update(kit=None, lamp=None, last_products=[], history=[])
+            s.update(kit=None, lamp=None, last_products=[])
             plan["product_id"] = None
-        if route != "kitchen_lighting":
+        if not commercial and route != "kitchen_lighting":
             s["kit"] = None
-        if route != "lamp":
+        if not commercial and route != "lamp":
             s["lamp"] = None
         tool_result = None
         if route == "lamp":
@@ -332,21 +353,25 @@ async def chat(body:ChatInput,request:Request):
         if tool_result is not None:
             result = response(s, **tool_result)
             result["engine"] = engine if result.get("engine") != "fallback" else "fallback"
-            # The verified order summary is not rewritten by the language model:
-            # it can confuse per-unit attributes with totals even with correct cards.
-            if engine == "openai" and result["stage"] != "proposal":
+            # Verified constraints and orders are not rewritten: the model can
+            # confuse exact/maximum values or invent store-wide availability.
+            if engine == "openai" and result["stage"] == "clarification":
                 try:
                     result["message"] = await compose_reply(message, s["history"], {
                         "result":result, "catalog_mode":catalog.mode})
                 except Exception:
                     result["engine"] = "fallback"
             s["ai_clarification"] = result["stage"] == "clarification"
-            s["history"]=(s["history"]+[{"role":"user","text":message},
-                {"role":"assistant","text":result["message"]}])[-12:]
+            remember(s, message, result["message"])
             return result
         if attachment and engine!="openai" and attachment.get("text"):
             plan["query"]=attachment["text"][:1000]
         intent=plan["intent"]
+        if specification and intent in {"propose", "search", "compare", "details"}:
+            result = response(s, **await resolve_specification(catalog, s, plan["items"], propose=intent == "propose"), engine=engine)
+            s["ai_clarification"] = result["stage"] == "clarification"
+            remember(s, message, result["message"])
+            return result
         s["ai_clarification"] = intent == "clarify" or (intent == "consult" and "?" in plan.get("answer", ""))
         query=plan.get("query") or message
         chosen=[]
@@ -359,6 +384,17 @@ async def chat(body:ChatInput,request:Request):
             result=response(s,plan.get("answer") or "Я помогу с выбором электротехнических товаров. Что вы хотите сделать?",engine=engine)
         elif intent=="clarify":
             result=response(s,plan.get("question") or "Что вы хотите сделать и что у вас уже есть?",engine=engine,stage="clarification")
+            if engine == "openai" and needs_dialogue_repair(s["history"], result["message"]):
+                try:
+                    advice = await compose_reply(message, s["history"], {"dialogue_goal":"explain_next_step",
+                        "catalog_mode":catalog.mode, "result":{"products":[], "stage":"answer",
+                        "message":"Дайте предварительную общую рекомендацию по уже известным условиям; не повторяйте вопрос."}})
+                    if "?" in advice or advice.strip() in {e["text"].strip() for e in s["history"][-6:]}:
+                        raise ValueError("Repeated clarification")
+                    result=response(s, "Предварительная консультация — наличие и совместимость ещё не подтверждены.\n" + advice, engine=engine)
+                except Exception:
+                    result=response(s,"Не удалось надёжно продолжить консультацию. Уже сообщённые условия сохранены; повторять их не нужно. Можно указать маркировку оборудования или передать эти условия менеджеру для проверки. Корзина не изменилась.",engine="fallback")
+                s["ai_clarification"] = False
         elif intent=="greeting":
             result=response(s,"Здравствуйте! Подберу товар по артикулу или характеристикам, проверю наличие и помогу собрать корзину. Что ищете?",engine=engine)
         elif intent=="conditions":
@@ -394,14 +430,14 @@ async def chat(body:ChatInput,request:Request):
             else:
                 result=response(s, "Вот сравнение по данным каталога." if intent=="compare" else f"Нашёл подходящие позиции. Наличие показано для города {s['city']}.",chosen,engine=engine)
         # Keep deterministic commerce/certificate answers and confirmation unchanged.
-        if engine == "openai" and intent not in {"conditions", "clarify", "propose", "consult", "out_of_scope"} and plan.get("topic") != "certificate":
+        if engine == "openai" and (chosen or intent == "greeting") and intent not in {"conditions", "clarify", "propose", "consult", "out_of_scope"} and plan.get("topic") != "certificate":
             try:
                 explanation = await compose_reply(message, s["history"], {
                     "result": result, "catalog_mode": catalog.mode})
                 result["message"] = explanation
             except Exception:
                 result["engine"] = "fallback"
-        s["history"]=(s["history"]+[{"role":"user","text":message},{"role":"assistant","text":result["message"]}])[-12:]
+        remember(s, message, result["message"])
         return result
 
 
