@@ -1,8 +1,4 @@
-"""QA-01 reproductions; xfail means a known defect, not a passed requirement.
-
-Run with --runxfail to see the failures. Remove each strict marker when the
-backend owner fixes it. All data is synthetic; no external API is called.
-"""
+"""Regression acceptance: previously failing cases must now pass without xfail."""
 import io
 import importlib.util
 
@@ -25,8 +21,6 @@ def case_client(monkeypatch):
         yield client
 
 
-@pytest.mark.xfail(importlib.util.find_spec("app.lamps") is None, strict=True, raises=AssertionError,
-                   reason="BE-01: free search does not enforce explicit product parameters")
 def test_explicit_lamp_parameters_exclude_incompatible_results(case_client):
     # Supply all three parameters; asking for missing power is valid behavior.
     result = case_client.post("/api/chat", json={"message": "лампа E27 до 40 Вт 3000 К"})
@@ -38,8 +32,6 @@ def test_explicit_lamp_parameters_exclude_incompatible_results(case_client):
                for p in products), "Products outside the explicit requirements are presented as suitable"
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError,
-                   reason="BE-02: chat ignores parsed specification items after the first line")
 def test_two_line_excel_specification_preserves_both_items(case_client, monkeypatch):
     book = Workbook()
     book.active.append(["DEMO-C16-A", 2])

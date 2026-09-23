@@ -274,3 +274,5 @@ button:disabled { cursor: not-allowed; }
   .selection-bar > .primary-button { margin-left: auto; font-size: 12px; }
   .cart-drawer { padding: 22px; }
 }
+.mobile-reset { display: none; }
+@media (max-width: 800px) { .mobile-reset { display: inline-flex; margin: 0 12px 8px 0; padding: 8px 12px; background: #eef4ff; color: #214c9f; border: 1px solid #cddbf2; border-radius: 8px; font: inherit; cursor: pointer; } }

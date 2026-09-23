@@ -1,4 +1,4 @@
-"""Fault-injection reproduction of a short-answer routing failure, not live AI."""
+"""Regression acceptance: previously failing cases must now pass without xfail."""
 import importlib.util
 
 import pytest
@@ -8,9 +8,6 @@ from app import main
 from app.catalog import Catalog
 
 
-@pytest.mark.xfail(importlib.util.find_spec("app.dialogue") is not None,
-                   strict=True, raises=AssertionError,
-                   reason="BE01-R3: general AI route discards the active kit on its own 2 m option")
 def test_short_offered_answer_preserves_kitchen_context(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "")
     monkeypatch.setenv("ALLOW_LOCAL_SETUP", "0")

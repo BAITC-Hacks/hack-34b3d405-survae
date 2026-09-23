@@ -1,8 +1,4 @@
-"""Independent BE-01 review cases. Requires the backend/novice-dialogue PR.
-
-Known failures are explicit; use --runxfail on the integration checkout to
-reproduce them. Strict markers must be removed when the backend fixes land.
-"""
+"""Regression acceptance: previously failing cases must now pass without xfail."""
 import importlib.util
 
 import pytest
@@ -33,8 +29,6 @@ def ask(client, message):
     return reply.json()
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError,
-                   reason="BE01-R1: active lamp dialogue swallows the minimum-order question")
 def test_minimum_order_question_after_lamp_selection(client):
     selected = ask(client, "Лампа E27 до 40 Вт 3000 К")
     assert [p["article"] for p in selected["products"]] == ["DEMO-LED-W"]
@@ -44,8 +38,6 @@ def test_minimum_order_question_after_lamp_selection(client):
     assert "DEMO-LED-W: 1 ед." in reply["message"]
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError,
-                   reason="BE01-R2: explicit exact wattage becomes a maximum while awaiting power")
 def test_exact_wattage_reply_never_becomes_a_maximum(client):
     ask(client, "Нужна лампочка")
     ask(client, "E27")
