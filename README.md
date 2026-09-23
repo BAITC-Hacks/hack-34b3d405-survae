@@ -7,5 +7,103 @@ AI-консультант для электротехнического мага
 ## Что реализовано
 
 - Свободный диалог с контекстом и защитой от повторных вопросов; запросы вне профиля магазина обрабатываются отдельно.
-- Поиск по артикулу, карточки с характеристиками, ценами, городски…53349 tokens truncated…x;font-weight:600;color:#647b6b;margin-bottom:10px}.assistant-avatar{background:#e2eee5;border:1px solid #cbdcce;border-radius:7px;width:24px;height:24px;display:grid;place-items:center;color:var(--green);font-size:19px}.message-text{white-space:pre-line;font-size:13px;line-height:1.8;color:#354b3e}.engine-note{font-size:9px;color:#a2844e;margin-top:8px}.product-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin-top:15px}.product-card{background:white;border:1px solid var(--border);border-radius:13px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 2px 6px #193e2103}.product-top{display:flex;padding:15px 15px 9px;gap:11px}.product-picture{width:62px;height:62px;flex-shrink:0;background:#f5f7f4;border-radius:9px;object-fit:contain;padding:5px;display:grid;place-items:center;color:#8cab92;font-size:30px}.product-info{min-width:0}.sku{color:#94a194;font-size:9px;letter-spacing:.5px;margin:3px 0 7px}.product-card h3{font-size:11px;font-weight:650;line-height:1.6;margin:0;word-break:break-word}.product-attributes{font-size:10px;margin:0 15px 10px}.attribute-row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #f1f4f0;padding:6px 0;line-height:1.5}.attribute-row span{color:#95a18f}.attribute-row strong{text-align:right;font-weight:500;color:#57704f}.stock-line{font-size:10px;color:#42865c;margin:0 15px 10px;display:flex;align-items:center;gap:5px}.stock-line.empty{color:#a68b5d}.stock-line i{width:4px;height:4px;background:currentColor;border-radius:50%}.card-warning{font-size:9px;line-height:1.65;background:#fff8e9;color:#9f824c;margin:0 12px 10px;padding:9px 10px;border-radius:7px}.card-reason{font-size:10px;color:#5b8263;background:#f1f7f0;margin:0 12px 10px;padding:10px;border-radius:7px;line-height:1.65}.card-links{margin:0 15px 10px;display:flex;flex-wrap:wrap;gap:9px;align-items:center}.card-links a{font-size:9px;text-decoration:none}.certificate-missing{font-size:9px;color:#99a38f}.product-footer{padding:13px 15px;border-top:1px solid #edf1e8;margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px}.price{font-size:19px;font-weight:650;letter-spacing:-.7px;white-space:nowrap}.price small{display:block;font-size:8px;color:#9aa48f;font-weight:400;letter-spacing:0;margin-top:4px}.product-add{display:flex;align-items:center;gap:5px}.qty{width:46px;border:1px solid #dee6d8;border-radius:7px;padding:8px 5px;font-size:10px;text-align:center;color:#53653e;background:#fff}.add-button{background:#eaf3e9;color:#427542;border:1px solid #dfeadd;border-radius:7px;height:32px;padding:0 9px;font-size:10px;font-weight:600}.add-button:hover{background:#d4e9d3}.section-caption{font-size:11px;color:#69856a;margin:20px 0 -4px;font-weight:650}.sources{display:flex;gap:12px;margin-top:10px;font-size:10px}.proposal{border:1px solid #b8d5be;background:#f1f8f1;border-radius:13px;padding:18px;margin-top:15px}.proposal h3{font-size:13px;margin:0 0 8px}.proposal-city{font-size:10px;color:#719075;margin-bottom:14px}.proposal-line{display:flex;justify-content:space-between;gap:16px;font-size:11px;line-height:1.7;padding:9px 0;border-bottom:1px solid #dfeadf}.proposal-line span:first-child{max-width:70%}.proposal-total{display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin:15px 0}.proposal-buttons{display:flex;gap:8px}.primary-button{border:0;background:var(--green);color:#fff;border-radius:8px;padding:11px 15px;font-size:11px;font-weight:600}.secondary-button{border:1px solid #d5e1d3;background:#fff;color:#6f8768;border-radius:8px;padding:10px 14px;font-size:11px}.proposal-note{font-size:9px;color:#8aa082;margin:10px 0 0;line-height:1.5}.cart-link{display:inline-flex;background:#e7f1e5;color:#427449;border-radius:7px;padding:9px 12px;font-size:11px;text-decoration:none;margin-top:12px}.drawer-backdrop{position:fixed;inset:0;background:#142e2450;z-index:20;backdrop-filter:blur(2px)}.cart-drawer{position:fixed;right:0;top:0;bottom:0;width:440px;max-width:100vw;background:#fff;z-index:21;display:flex;flex-direction:column;padding:28px}.drawer-header{display:flex;justify-content:space-between;align-items:center}.drawer-header h2{font-size:27px;letter-spacing:-1px;margin:7px 0 16px}.icon-button{width:32px;height:32px;background:#f3f6f1;border:0;border-radius:8px;color:#708469;font-size:25px}.cart-notice{background:#f4f5ec;color:#9b985e;padding:11px;border-radius:8px;font-size:10px;line-height:1.6}.cart-items{flex:1;overflow:auto;padding-top:20px}.empty-cart{padding:60px 15px;text-align:center;color:#829476;line-height:1.8}.empty-cart>span{display:block;font-size:44px;color:#b1c7a4;margin-bottom:12px}.cart-line{border-bottom:1px solid var(--border);padding:16px 0}.cart-line h3{font-size:12px;line-height:1.6;margin:0 0 7px}.cart-line-details{display:flex;justify-content:space-between;font-size:11px;color:#7c9270;gap:10px}.remove-item{font-size:9px;color:#a09d85;border:0;background:transparent;padding:10px 0 0}.cart-total{display:flex;justify-content:space-between;font-size:16px;padding:19px 0 0;border-top:1px solid var(--border)}.cart-total strong{font-size:25px;letter-spacing:-1px}.cart-bottom>p{font-size:10px;color:#94a187;line-height:1.8;margin-bottom:19px}.cart-bottom .secondary-button{width:100%}.cart-permalink{display:block;text-align:center;font-size:10px;margin-top:16px;text-decoration:none}.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#25482e;color:white;border-radius:10px;padding:13px 20px;z-index:50;font-size:12px;max-width:min(600px,90vw);line-height:1.7;box-shadow:0 8px 30px #15382330}.attachment-pill{max-width:810px;margin:0 auto 8px;font-size:10px;color:var(--green);background:#e6f0e3;padding:8px 12px;border-radius:7px;width:fit-content}.attachment-pill button{margin-left:15px;background:none;border:none;color:#5c7f4f}.thinking{color:#8c9f7e;font-size:12px;padding:10px 0}.thinking span{display:inline-block;animation:pulse 1.4s infinite}.error-message{color:#a7714b;font-size:12px;line-height:1.8;background:#fff5e9;border-radius:10px;padding:12px 15px}.setup-page{display:grid;place-items:center;width:100%;padding:24px;min-height:100dvh}.setup-card{max-width:480px;width:100%;padding:35px;background:#fff;border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow)}.setup-card h1{font-size:25px;letter-spacing:-1px}.setup-card p{font-size:12px;line-height:1.8;color:#7c8e70}.setup-card label{display:block;font-size:11px;margin:24px 0 8px}.setup-card input{width:100%;padding:13px;border:1px solid #cfdac8;border-radius:8px}.setup-card button{width:100%;margin-top:14px}.setup-card a{display:inline-block;margin-top:20px;font-size:12px}@keyframes appear{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}@keyframes pulse{50%{opacity:.3}}
-@media(min-height:850px){.welcome{margin-top:65px}.suggestions{margin-top:38px}}@media(max-width:1100px){.sidebar{width:224px;padding:28px 16px}.workspace{margin-left:224px;width:calc(100% - 224px)}.brand-by{font-size:8px;letter-spacing:.5px}.topbar{padding:0 25px}.connection-bar{padding:0 25px}.welcome{margin-top:26px}.welcome h1{font-size:35px}.assurance{padding:15px 12px}.suggestions strong{font-size:10px}.product-footer{flex-wrap:wrap}.product-add{margin-left:auto}}@media(max-width:800px){.sidebar{display:none}.workspace{margin-left:0;width:100%}.topbar{height:72px;padding:0 20px}.mobile-logo{display:grid;place-items:center;background:var(--green);color:white;width:30px;height:34px;border-radius:8px;font-size:30px}.connection-bar{padding:0 20px}.conversation{padding:0 20px 20px}.welcome{margin:30px auto 15px}.welcome h1{font-size:34px}.composer-area{padding:10px 20px 16px}.suggestions{max-width:580px}.assurance{display:none}}@media(max-width:520px){.topbar{padding:0 14px;height:66px}.page-title{font-size:12px}.page-title small{font-size:8px}.top-actions{gap:7px}.city-select select{font-size:10px;width:84px;padding:6px 0}.city-select>span{font-size:17px}.cart-label{display:none}.cart-button{padding:8px;gap:5px}.connection-bar{padding:0 15px;font-size:8px;height:39px}.demo-cart-label{display:none}.bar-divider{margin:0}.connection-bar>div{gap:5px}.connection-bar a{font-size:9px}.conversation{padding:0 15px 12px}.welcome{margin-top:25px}.hero-symbol{width:57px;height:57px;border-radius:18px;margin-bottom:20px}.hero-symbol span{font-size:34px}.eyebrow{font-size:8px;letter-spacing:1.6px}.welcome h1{font-size:29px;letter-spacing:-1.2px;margin:13px 0 15px}.hero-subtitle{font-size:11px;line-height:1.8;max-width:310px;margin:auto}.desktop-br{display:none}.suggestions{gap:8px;margin:24px 0 18px}.suggestions button{display:block;padding:13px;min-height:117px}.tile-icon{width:27px;height:27px;font-size:19px;margin-bottom:10px}.suggestions strong{font-size:10px;display:block}.suggestions small{font-size:8px;line-height:1.5;display:block;margin-top:5px}.tile-arrow{top:13px;right:12px}.welcome-foot{font-size:8px}.composer-area{padding:9px 12px 14px}.composer{padding:8px;gap:6px;border-radius:12px}.composer textarea{font-size:12px}.composer-note{font-size:7px;padding:0 5px;margin-top:8px}.composer-note>span:last-child{display:none}.product-grid{grid-template-columns:1fr}.product-footer{flex-wrap:nowrap}.product-top{padding:16px}.product-card h3{font-size:12px}.product-picture{width:64px;height:64px}.message-text{font-size:12px}.user-bubble{font-size:12px;max-width:94%}.cart-drawer{padding:22px}.proposal-buttons{flex-direction:column}.proposal-buttons button{width:100%}.product-add{gap:8px}.qty{width:55px}.add-button{padding:0 14px}.connection-bar .bar-divider{display:none}#ai-status{max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}@media(prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto!important;transition:none!important}}
+- Поиск по артикулу, карточки с характеристиками, ценами, городскими остатками и доступными документами.
+- Подбор подтверждённых аналогов по данным каталога; неизвестная совместимость не объявляется проверенной.
+- Информация об оплате, доставке и минимальной партии выбранного товара.
+- Подбор лампы с жёсткими условиями по цоколю, температуре и точной/максимальной мощности.
+- Учебный комплект подсветки кухни: уточнения, состав, назначение и проверка компонентов.
+- Разбор PDF, DOCX, XLSX/XLS, TXT/CSV; изображения обрабатываются при подключённом AI.
+- Проверка всех распознанных строк спецификации; неизвестная строка блокирует частичное предложение.
+- Список покупок → проверка цены/остатка → предложение → кнопка подтверждения → демо-корзина.
+- Повторное подтверждение не дублирует заказ. Сессии изолированы, POST защищён CSRF.
+- Адаптивный интерфейс, обработка ошибок, явные demo/fallback, новый диалог и прямая ссылка /cart.
+
+## Установка и запуск
+
+Нужен Python 3.11+. Node.js нужен только для frontend-тестов; сайт не требует сборки.
+
+### Windows PowerShell
+
+```powershell
+git clone https://github.com/BAITC-Hacks/hack-34b3d405-survae.git
+cd hack-34b3d405-survae
+py -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+### Linux / macOS
+
+```bash
+git clone https://github.com/BAITC-Hacks/hack-34b3d405-survae.git
+cd hack-34b3d405-survae
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements-dev.txt
+test -e .env || cp .env.example .env
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+Откройте [приложение](http://127.0.0.1:8000), [корзину](http://127.0.0.1:8000/cart) или [API-документацию](http://127.0.0.1:8000/docs).
+Запускайте один процесс, без нескольких workers. Уже заполненный .env не перезаписывайте.
+
+### Режимы и ключи
+
+По умолчанию работает demo-каталог из 15 синтетических позиций. Без ключа доступны локальный поиск и ограниченные правила — это не полноценная AI-консультация.
+Для AI задайте OPENAI_API_KEY в локальном .env и перезапустите сервер. OPENAI_MODEL по умолчанию gpt-4o-mini. Ключи не входят в репозиторий и не должны передаваться через браузерный JS или описание решения.
+
+Для каталога партнёра: CATALOG_MODE=live, EKT_USERNAME и EKT_PASSWORD из материалов партнёра. CATALOG_PAGES=20 — ограниченная выборка, не весь ассортимент.
+Синтетические товары не подставляются в live. Недоступность данных блокирует подтверждение покупки.
+Для обычного запуска оставьте ALLOW_LOCAL_SETUP=0; публичный деплой не настроен.
+
+## Проверка для жюри за 3–5 минут
+
+1. В режиме demo введите «Лампа E27 до 40 Вт 3000 К». Должна появиться DEMO-LED-W; товары 4000 К не подходят.
+2. «Какая минимальная партия?» — ответ относится к выбранной лампе: 1 ед.
+3. Новый диалог: «Нужна лампочка» → E27 → «Нужна ровно 40 Вт» → 3000 К. В demo такой позиции нет: 9 Вт не заменяет точные 40 Вт.
+4. Новый диалог: «Хочу подсветку кухни» → «2 м» → «Есть розетка рядом» → «Сухое место, вдали от воды» → «Тёплый свет». Предложение: DEMO-BAR-W ×2 + DEMO-PSU-60 ×1, 10900 ₸.
+5. До подтверждения корзина пуста. Текст «да» не добавляет товар. После кнопки подтверждения — две строки, count=3, сумма 10900 ₸. Повторное подтверждение не добавляет дубли.
+6. Откройте /cart. Новый диалог сохраняет подтверждённую корзину.
+7. Для спецификации загрузите Excel из двух столбцов: DEMO-C16-A | 2 и DEMO-LED-A | 3. Напишите «Подготовь предложение по спецификации»: обе строки должны попасть в предложение.
+8. С подключённым AI спросите про камеру для дома, затем «Можно купить торт?»: старая подсветка не подставляется, ответ учитывает профиль магазина.
+
+Дополнительно: DEMO-C16-Z — отсутствующий товар для проверки аналогов; DEMO-C16-A — характеристики и учебный документ. DEMO-документ не является настоящим сертификатом.
+
+## Архитектура и технологии
+
+Python / FastAPI / Pydantic / HTTPX; OpenAI Responses API со структурированными ответами; HTML/CSS/JavaScript без frontend-фреймворка. Обработка файлов: pypdf, python-docx, openpyxl, xlrd, Pillow. Полные зависимости — requirements.txt и requirements-dev.txt.
+
+- app/main.py — HTTP API, сессия, защита запросов и координация диалога.
+- app/ai.py, dialogue.py — разбор намерения, история и общая консультация.
+- app/catalog.py — demo/live данные, карточки, остатки и аналоги.
+- app/lamps.py, kits.py — проверяемые ограничения и учебная комплектация.
+- app/specifications.py, attachments.py — файлы и построчная проверка заказа.
+- app/commerce.py — предложение, повторная проверка и атомарное подтверждение.
+- static/ — интерфейс, работающий с тем же API.
+
+Основные методы: GET /api/cart, POST /api/chat, POST /api/cart/confirm.
+Сначала GET выдаёт cookie сессии и CSRF; POST требует X-CSRF-Token. Подтверждение содержит proposal_id и confirmed:true. [Полный контракт](docs/FRONTEND_API.md).
+
+## Проверки
+
+```bash
+python -m pytest -q
+node --test tests/frontend_flow.test.cjs tests/frontend_consultation.test.cjs
+```
+
+Финальная интеграционная проверка: 173 Python-теста и 6 frontend-тестов.
+Исправленные R1/R2/R3/BE-02 проверяются как обычные regression-тесты, без xfail.
+Были выполнены также ограниченные проверки настоящего OpenAI с demo-каталогом; это не гарантия ответа на любой запрос. [Отчёт финальной сборки](docs/FINAL_RELEASE.md).
+
+## Данные, внешние сервисы и ограничения
+
+Реальный адаптер использует API ekt.kz/api/products и API карточек; опубликованные условия покупки — [ekt.kz](https://ekt.kz/checkout-delivery/). data/demo_catalog.json и data/demo_kits.json — синтетические данные команды, явно обозначенные в интерфейсе.
+
+Корзина демонстрационная: **заказ на ekt.kz не оформляется**, склад не резервируется. Полный ассортимент партнёра и универсальная совместимость оборудования не проверены. Проверенный комплект кухни не является проектом электромонтажа.
+
+История (последние 32 сообщения), предложения и корзины находятся в памяти одного процесса. Перезапуск очищает их. Для production требуются постоянное хранилище, HTTPS, авторизация и разрешённая интеграция оформления заказа.
+
+Предложение содержит до 12 строк. Excel: до 5 листов, 150 строк и 16 столбцов; извлечённый текст — до 16000 символов; файл — до 8 МБ. Слишком большие документы отклоняются, а не обрезаются молча. Произвольная верстка, сложные таблицы и распознавание фото могут требовать уточнения; сверяйте результат с исходником.
+
+При подключённом AI сообщение, история и вложения отправляются в OpenAI API с store=false. Не загружайте персональные, платёжные и конфиденциальные данные. Секреты не публикуются. Деплой отсутствует; localhost — только компьютер, на котором запущен сервер.
