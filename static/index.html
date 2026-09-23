@@ -1,18 +1,18 @@
 <!doctype html>
 <html lang="ru">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EKT Ассистент · SURVAE</title><link rel="stylesheet" href="/static/style.css"><link rel="icon" href="/static/favicon.svg" type="image/svg+xml"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EKT Ассистент · SURVAE</title><link rel="stylesheet" href="/static/style.css"><link rel="stylesheet" href="/static/integration.css"><link rel="icon" href="/static/favicon.svg" type="image/svg+xml"></head>
 <body>
 <aside class="sidebar">
   <a class="brand" href="/" aria-label="EKT Ассистент, главная"><span class="brand-icon">ϟ</span><span>EKT<span class="brand-dot">.</span></span><span class="brand-by">by SURVAE</span></a>
   <div class="sidebar-label">ВАШ ПОМОЩНИК В КАТАЛОГЕ</div>
   <button class="nav-item active" id="new-chat"><span class="nav-icon">✧</span>Консультант<span class="nav-badge">AI</span></button>
   <button class="nav-item" data-prompt="Какие условия доставки?"><span class="nav-icon">▤</span>Доставка и оплата</button>
-  <div class="sidebar-label second-label">С ЧЕМ ПОМОЧЬ</div>
+  <button class="nav-item beginner-nav" data-start-guide><span class="nav-icon">✦</span>Не знаю, что выбрать</button><div class="sidebar-label second-label">С ЧЕМ ПОМОЧЬ</div>
   <button class="side-prompt" data-prompt="Помоги подобрать автоматический выключатель">Автоматические выключатели <span>↗</span></button>
   <button class="side-prompt" data-prompt="Нужна светодиодная лампа">Светильники и лампы <span>↗</span></button>
   <button class="side-prompt" data-prompt="Нужен медный кабель">Кабель и провод <span>↗</span></button>
   <div class="assurance"><span class="small-spark">✧</span><h3>От запроса до корзины</h3><p>Помогу разобраться в характеристиках, проверить наличие и сравнить варианты.</p><div class="assurance-line"><span>✓</span> Только данные каталога</div><div class="assurance-line"><span>✓</span> Добавление с подтверждением</div></div>
-  <div class="sidebar-bottom"><span class="team-mark">S</span><div><strong>Команда SURVAE</strong><small>Прототип · HackAlem AI</small></div></div>
+  <div class="sidebar-bottom"><span class="team-mark">S</span><div><strong>Команда SURVAE</strong><small>Прототип · HackAlem AI</small><small id="build-version">Версия загружается…</small></div></div>
 </aside>
 <main class="workspace">
   <header class="topbar"><div class="page-title"><span class="mobile-logo">ϟ</span><span>Консультант <small>Электротехника, понятным языком</small></span></div><div class="top-actions"><label class="city-select"><span aria-hidden="true">⌖</span><select id="city" aria-label="Город наличия"><option>Астана</option><option>Алматы</option><option>Шымкент</option><option>Караганда</option><option>Атырау</option><option>Актау</option><option>Тараз</option><option>Усть-Каменогорск</option><option>Талдыкорган</option></select></label><button id="open-cart" class="cart-button"><span aria-hidden="true">▱</span><span class="cart-label">Корзина</span><span id="cart-count">0</span></button></div></header>
@@ -20,10 +20,10 @@
   <section id="conversation" class="conversation" aria-label="Диалог с консультантом" aria-live="polite">
     <div id="welcome" class="welcome">
       <div class="hero-symbol"><span>✧</span><i></i></div>
-      <div class="eyebrow">ВАШ ЭКСПЕРТ ПО КАТАЛОГУ EKT</div>
-      <h1>Найдём то, что нужно<br>для вашей работы<span>.</span></h1>
-      <p class="hero-subtitle">Напишите артикул, опишите задачу или прикрепите<br class="desktop-br"> спецификацию. Я проверю каталог и помогу с выбором.</p>
-      <div class="suggestions">
+      <div class="eyebrow">РАЗБЕРЁМСЯ ВМЕСТЕ, ШАГ ЗА ШАГОМ</div>
+      <h1>Не нужно знать названия.<br>Начнём с вашей задачи<span>.</span></h1>
+      <p class="hero-subtitle">Расскажите, что хотите сделать. Поможем уточнить параметры,<br class="desktop-br"> сравнить товары и собрать список перед покупкой.</p>
+      <button class="beginner-hero" data-start-guide><span>✦</span><span><strong>Помогите мне выбрать</strong><small>Простые вопросы. Можно ответить «Не знаю».</small></span><b>→</b></button><div class="suggestions">
         <button data-suggestion="stock"><span class="tile-icon">⌕</span><strong>Проверить наличие</strong><small id="stock-example">Найти товар по артикулу</small><span class="tile-arrow">↗</span></button>
         <button data-suggestion="analog"><span class="tile-icon">⇄</span><strong>Подобрать аналог</strong><small>Если нужной позиции нет</small><span class="tile-arrow">↗</span></button>
         <button data-prompt="Какие условия доставки в Астану?"><span class="tile-icon">▱</span><strong>Узнать о доставке</strong><small>Оплата, сроки и самовывоз</small><span class="tile-arrow">↗</span></button>
@@ -33,10 +33,10 @@
     </div>
     <div id="messages" class="messages"></div>
   </section>
-  <footer class="composer-area"><div id="attachment-pill" class="attachment-pill" hidden></div><form id="chat-form" class="composer"><button type="button" id="attach-button" class="attach-button" aria-label="Прикрепить файл">＋</button><textarea id="message-input" rows="1" placeholder="Какой товар вы ищете?" aria-label="Ваш вопрос" maxlength="4000"></textarea><button type="submit" id="send-button" class="send-button" aria-label="Отправить сообщение">↑</button></form><div class="composer-note"><span>Добавление в корзину — только с вашего подтверждения</span><span>Enter ↵</span></div><input type="file" id="file-input" accept=".pdf,.docx,.xlsx,.xls,.jpg,.jpeg,.png,.txt,.csv" hidden></footer>
+  <footer class="composer-area"><section id="selection-bar" class="selection-bar" hidden aria-label="Ваш список покупок"><button id="show-selection" type="button"><span>Ваш список</span><strong id="selection-count">0 позиций</strong></button><span id="selection-total"></span><button id="prepare-selection" class="primary-button" type="button">Проверить набор →</button></section><div id="attachment-pill" class="attachment-pill" hidden></div><form id="chat-form" class="composer"><button type="button" id="attach-button" class="attach-button" aria-label="Прикрепить файл">＋</button><textarea id="message-input" rows="1" placeholder="Например: нужно заменить лампочку, но не знаю какую…" aria-label="Ваш вопрос" maxlength="4000"></textarea><button type="submit" id="send-button" class="send-button" aria-label="Отправить сообщение">↑</button></form><div class="composer-note"><span>Добавление в корзину — только с вашего подтверждения</span><span>Enter ↵</span></div><input type="file" id="file-input" accept=".pdf,.docx,.xlsx,.xls,.jpg,.jpeg,.png,.txt,.csv" hidden></footer>
 </main>
 <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
 <aside id="cart-drawer" class="cart-drawer" role="dialog" aria-modal="true" aria-labelledby="cart-title" hidden><div class="drawer-header"><div><span class="eyebrow">ВАШ ВЫБОР</span><h2 id="cart-title">Корзина</h2></div><button id="close-cart" class="icon-button" aria-label="Закрыть корзину">×</button></div><div class="cart-notice">Демонстрационная корзина · заказы на ekt.kz не оформляются</div><div id="cart-items" class="cart-items"></div><div class="cart-bottom"><div class="cart-total"><span>Итого</span><strong id="cart-total">0 ₸</strong></div><p>Наличие и цена повторно проверяются при добавлении.</p><button id="clear-cart" class="secondary-button">Очистить корзину</button><a href="/cart" class="cart-permalink">Прямая ссылка на эту корзину ↗</a></div></aside>
-<div id="toast" class="toast" role="status" hidden></div>
-<script src="/static/app.js" defer></script>
+<dialog id="selection-dialog" aria-labelledby="selection-title"><div class="selection-heading"><div><span class="eyebrow">ЕЩЁ НЕ В КОРЗИНЕ</span><h2 id="selection-title">Ваш список покупок</h2></div><button type="button" id="close-selection" class="icon-button" aria-label="Закрыть список">×</button></div><p>Измените количество или уберите лишнее. Цены и остатки проверит сервер перед подтверждением.</p><div id="selection-items"></div><button id="prepare-selection-dialog" type="button" class="primary-button">Проверить весь набор</button></dialog><div id="toast" class="toast" role="status" hidden></div>
+<script src="/static/app.js" defer></script><script src="/static/guide.js" defer></script>
 </body></html>

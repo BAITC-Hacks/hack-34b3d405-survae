@@ -126,7 +126,9 @@ def search_score(product, query):
     supplier = normalized(product.get("supplier_article", ""))
     if q in [article, supplier, product["id"]]:
         return 200
-    if article and article in q:
+    if article and re.search(r"(?<!\w)" + re.escape(article) + r"(?!\w)", q):
+        return 100
+    if supplier and re.search(r"(?<!\w)" + re.escape(supplier) + r"(?!\w)", q):
         return 100
     haystack = normalized(" ".join([product["name"], product["article"], product.get("supplier_article", ""),
                                   " ".join(product.get("attributes", {}).values())]))
@@ -234,11 +236,9 @@ class Catalog:
 
     async def search(self, query, limit=5):
         scored = sorted(((search_score(p, query), p) for p in self.items.values()), key=lambda x:x[0], reverse=True)
+        # A stated article identifies an item; fuzzy matches must not dilute it.
         exact = [p for score,p in scored if score >= 100]
-        if exact:
-            results = await asyncio.gather(*(self.detail(p["id"]) for p in exact[:limit]))
-            return [p for p in results if p]
-        chosen = [p for score,p in scored if score > 0][:limit]
+        chosen = (exact or [p for score,p in scored if score > 0])[:limit]
         if not chosen and str(query).isdigit():
             p = await self.detail(query)
             return [p] if p else []

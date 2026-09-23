@@ -1,0 +1,8 @@
+.kit-summary { margin: 18px 0; padding: 18px; border: 1px solid #d7e5db; border-radius: 14px; background: #f6faf7; overflow-wrap: anywhere; }
+.kit-summary h3 { margin: 0 0 12px; font-size: 17px; }
+.kit-purpose { padding: 10px 0; border-bottom: 1px solid #e0e9e2; }
+.kit-purpose strong { font-size: 14px; }
+.kit-purpose p, .kit-check { margin: 7px 0; font-size: 13px; line-height: 1.6; }
+.kit-check { color: #28633c; }
+.server-choices { margin: 16px 0; }
+#build-version { display: block; margin-top: 5px; font-variant-numeric: tabular-nums; }

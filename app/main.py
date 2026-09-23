@@ -2,6 +2,7 @@ import asyncio
 import os
 import re
 import secrets
+import subprocess
 import time
 from contextlib import asynccontextmanager, suppress
 from typing import Literal
@@ -22,6 +23,21 @@ from app.kits import handle_kit
 load_dotenv(ROOT / ".env")
 catalog = Catalog()
 sessions = {}
+
+
+def build_version():
+    configured = os.getenv("APP_VERSION", "").strip()
+    if configured:
+        return configured[:40]
+    try:
+        result = subprocess.run(["git", "rev-parse", "--short=7", "HEAD"], cwd=ROOT,
+                                capture_output=True, text=True, timeout=2, check=True)
+        return result.stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return "local"
+
+
+BUILD_VERSION = build_version()
 
 
 @asynccontextmanager
@@ -73,7 +89,7 @@ async def security(request, call_next):
     response.headers["Referrer-Policy"]="no-referrer"
     response.headers["X-Frame-Options"]="SAMEORIGIN"
     response.headers["Content-Security-Policy"]="default-src 'self'; img-src 'self' https://ekt.kz data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
-    if request.url.path.startswith("/api"):
+    if request.url.path.startswith("/api") or request.url.path in {"/", "/cart"}:
         response.headers["Cache-Control"]="no-store"
     return response
 
@@ -110,7 +126,8 @@ async def state(request:Request):
     return {"csrf":s["csrf"],"city":s["city"],"cart":cart_view(s),"proposal":s["pending"],
             "catalog":{"mode":catalog.mode,"count":len(catalog.items),"loading":catalog.loading,"error":catalog.error,
                        "notice":"Репрезентативная выборка каталога"},
-            "ai_enabled":bool(os.getenv("OPENAI_API_KEY")),"setup_allowed":local_setup_allowed(request)}
+            "ai_enabled":bool(os.getenv("OPENAI_API_KEY")),"setup_allowed":local_setup_allowed(request),
+            "version":BUILD_VERSION}
 
 
 class CityInput(BaseModel):
@@ -231,6 +248,18 @@ class ChatInput(BaseModel):
     @classmethod
     def strip_message(cls, value):
         return value.strip()
+
+
+@app.post("/api/chat/reset")
+async def reset_chat(request:Request):
+    s=request.state.session
+    async with s["lock"]:
+        s["history"]=[]
+        s["last_products"]=[]
+        s["attachments"]={}
+        s["pending"]=None
+        s["kit"]=None
+        return response(s,"Начат новый диалог.")
 
 
 @app.post("/api/chat")
