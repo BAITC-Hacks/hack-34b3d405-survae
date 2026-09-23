@@ -153,11 +153,15 @@ def test_lamp_constraints_are_session_local(client):
 
 def test_ai_enabled_cannot_bypass_hard_constraints(client, monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "test-not-a-real-key")
-    async def unexpected(*args, **kwargs):
-        pytest.fail("Bounded explicit constraints must not be rewritten by the LLM")
-    monkeypatch.setattr(main, "understand", unexpected)
-    monkeypatch.setattr(main, "compose_reply", unexpected)
-    assert ids(ask(client, "Лампа E27 до 40 Вт 3000 К")) == {"DEMO-LED-W"}
+    async def route(*args, **kwargs):
+        return {"intent":"search", "route":"lamp", "query":"лампа 4000 К", "topic":"general"}, "openai"
+    async def compose(message, history, facts):
+        assert ids(facts["result"]) == {"DEMO-LED-W"}
+        return "Нашёл тёплую лампу по указанным параметрам. Проверьте требования светильника."
+    monkeypatch.setattr(main, "understand", route)
+    monkeypatch.setattr(main, "compose_reply", compose)
+    reply = ask(client, "Лампа E27 до 40 Вт 3000 К")
+    assert ids(reply) == {"DEMO-LED-W"} and reply["engine"] == "openai"
 
 
 def test_selection_never_changes_cart_and_new_message_invalidates_proposal(client):

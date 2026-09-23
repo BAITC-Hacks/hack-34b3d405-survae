@@ -94,6 +94,8 @@ def test_composed_reply_preserves_server_facts(client, monkeypatch, fail):
     monkeypatch.setattr(main, 'understand', understand)
     monkeypatch.setattr(main, 'compose_reply', compose)
     result = client.post('/api/chat', json={'message':'DEMO-C16-A'}).json()
-    assert 'Нашёл подходящие позиции' in result['message']
+    assert result['products'][0]['article'] == 'DEMO-C16-A'
+    assert result['products'][0]['price'] == 1390
+    assert ('Нашёл подходящие позиции' in result['message']) if fail else result['message'] == 'Пояснение AI'
     assert result['cart']['count'] == 0
     assert result['engine'] == ('fallback' if fail else 'openai')

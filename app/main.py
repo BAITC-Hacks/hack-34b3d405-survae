@@ -20,6 +20,7 @@ from app.ai import understand, verify_key, compose_reply
 from app.attachments import extract, MAX_BYTES
 from app.kits import handle_kit
 from app.lamps import handle_lamp
+from app.dialogue import local_route
 
 load_dotenv(ROOT / ".env")
 catalog = Catalog()
@@ -285,8 +286,8 @@ async def chat(body:ChatInput,request:Request):
                 s["pending"] = None
         if body.action == "reset":
             s.update(pending=None, history=[], last_products=[], kit=None, lamp=None, ai_clarification=False)
-            return response(s,"Новый диалог. Опишите задачу, например: хочу подсветку кухни.",
-                            stage="clarification", options=["Хочу подсветку кухни"])
+            return response(s,"Начнём заново. Что вы хотите сделать или какой товар ищете?",
+                            stage="clarification")
         if body.action == "cancel":
             s["pending"] = None
             return response(s,"Отменено. Корзина не изменилась.")
@@ -307,34 +308,56 @@ async def chat(body:ChatInput,request:Request):
             return response(s,"Подтвердите конкретное предложение кнопкой. Сообщение само по себе корзину не меняет.")
         # A new substantive message invalidates an earlier confirmation context.
         s["pending"]=None
-        if body.attachment_id:
-            s["lamp"] = None  # Attachment interpretation belongs to the AI handler.
-        lamp_result = await handle_lamp(catalog, s, message) if not body.attachment_id else None
-        if lamp_result is not None:
-            result = response(s, **lamp_result)
-            s["history"]=(s["history"]+[{"role":"user","text":message},
-                {"role":"assistant","text":result["message"]}])[-12:]
-            return result
-        kit_result = await handle_kit(catalog, s, message)
-        if kit_result is not None:
-            result = response(s, **kit_result)
-            s["history"]=(s["history"]+[{"role":"user","text":message},
-                {"role":"assistant","text":result["message"]}])[-12:]
-            return result
         attachment=s["attachments"].pop(body.attachment_id,None) if body.attachment_id else None
         plan,engine=await understand(message,s["history"],s["last_products"],attachment)
+        # Interpret the current message BEFORE invoking any specialised calculator.
+        # Their session state is context, never an unconditional chat interceptor.
+        route = plan.get("route", "general") if engine == "openai" else local_route(message, s)
+        if attachment or plan["intent"] in {"consult", "out_of_scope", "conditions", "greeting"}:
+            route = "general"
+        old_route = "kitchen_lighting" if s.get("kit") else "lamp" if s.get("lamp") else "general"
+        changed = plan.get("new_topic", False) or (old_route != "general" and route != old_route)
+        if changed:
+            s.update(kit=None, lamp=None, last_products=[], history=[])
+            plan["product_id"] = None
+        if route != "kitchen_lighting":
+            s["kit"] = None
+        if route != "lamp":
+            s["lamp"] = None
+        tool_result = None
+        if route == "lamp":
+            tool_result = await handle_lamp(catalog, s, message)
+        elif route == "kitchen_lighting":
+            tool_result = await handle_kit(catalog, s, message, use_ai=engine == "openai")
+        if tool_result is not None:
+            result = response(s, **tool_result)
+            result["engine"] = engine if result.get("engine") != "fallback" else "fallback"
+            # The verified order summary is not rewritten by the language model:
+            # it can confuse per-unit attributes with totals even with correct cards.
+            if engine == "openai" and result["stage"] != "proposal":
+                try:
+                    result["message"] = await compose_reply(message, s["history"], {
+                        "result":result, "catalog_mode":catalog.mode})
+                except Exception:
+                    result["engine"] = "fallback"
+            s["ai_clarification"] = result["stage"] == "clarification"
+            s["history"]=(s["history"]+[{"role":"user","text":message},
+                {"role":"assistant","text":result["message"]}])[-12:]
+            return result
         if attachment and engine!="openai" and attachment.get("text"):
             plan["query"]=attachment["text"][:1000]
         intent=plan["intent"]
-        s["ai_clarification"] = intent == "clarify"
+        s["ai_clarification"] = intent == "clarify" or (intent == "consult" and "?" in plan.get("answer", ""))
         query=plan.get("query") or message
         chosen=[]
         if plan.get("product_id"):
             p=await catalog.detail(plan["product_id"])
             chosen=[p] if p else []
-        if not chosen and (intent not in {"greeting","conditions","clarify"} or plan.get("topic") == "minimum"):
+        if not chosen and (intent not in {"greeting","conditions","clarify","consult","out_of_scope"} or plan.get("topic") == "minimum"):
             chosen=await catalog.search(query)
-        if intent=="clarify":
+        if intent in {"consult", "out_of_scope"}:
+            result=response(s,plan.get("answer") or "Я помогу с выбором электротехнических товаров. Что вы хотите сделать?",engine=engine)
+        elif intent=="clarify":
             result=response(s,plan.get("question") or "Что вы хотите сделать и что у вас уже есть?",engine=engine,stage="clarification")
         elif intent=="greeting":
             result=response(s,"Здравствуйте! Подберу товар по артикулу или характеристикам, проверю наличие и помогу собрать корзину. Что ищете?",engine=engine)
@@ -371,11 +394,11 @@ async def chat(body:ChatInput,request:Request):
             else:
                 result=response(s, "Вот сравнение по данным каталога." if intent=="compare" else f"Нашёл подходящие позиции. Наличие показано для города {s['city']}.",chosen,engine=engine)
         # Keep deterministic commerce/certificate answers and confirmation unchanged.
-        if engine == "openai" and intent not in {"conditions", "clarify", "propose"} and plan.get("topic") != "certificate":
+        if engine == "openai" and intent not in {"conditions", "clarify", "propose", "consult", "out_of_scope"} and plan.get("topic") != "certificate":
             try:
                 explanation = await compose_reply(message, s["history"], {
                     "result": result, "catalog_mode": catalog.mode})
-                result["message"] = explanation + "\n\n" + result["message"]
+                result["message"] = explanation
             except Exception:
                 result["engine"] = "fallback"
         s["history"]=(s["history"]+[{"role":"user","text":message},{"role":"assistant","text":result["message"]}])[-12:]

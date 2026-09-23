@@ -270,10 +270,18 @@ def test_ai_slot_response_validation(client,monkeypatch):
         def __init__(self,**kwargs): pass
         async def __aenter__(self): return self
         async def __aexit__(self,*args): pass
+        async def aclose(self): pass
         async def post(self,url,**kwargs):
             calls.append(kwargs["json"])
-            return httpx.Response(200,request=httpx.Request("POST",url),json={"output":[{"content":[{
-                "type":"output_text", "text":'{"length_m":2,"outlet":true,"dry":true,"color":"warm"}'}]}]})
+            name = kwargs['json'].get('text', {}).get('format', {}).get('name')
+            if name == 'shopping_intent':
+                text = ai.ShoppingIntent(intent='search', route='kitchen_lighting', query='подсветка кухни', topic='general', language='ru').model_dump_json()
+            elif name == 'kit_slots':
+                text = '{"length_m":2,"outlet":true,"dry":true,"color":"warm"}'
+            else:
+                text = 'Учебный комплект готов к проверке и подтверждению.'
+            return httpx.Response(200,request=httpx.Request("POST",url),json={"status":"completed","output":[{"content":[{
+                "type":"output_text", "text":text}]}]})
     monkeypatch.setattr(ai.httpx,"AsyncClient",FakeClient)
     data=send(client,"Хочу подсветку кухни длиной два метра")
     assert data["engine"]=="openai"
@@ -290,6 +298,7 @@ def test_api_failure_is_labeled_fallback(client,monkeypatch):
         def __init__(self,**kwargs): pass
         async def __aenter__(self): return self
         async def __aexit__(self,*args): pass
+        async def aclose(self): pass
         async def post(self,*args,**kwargs): raise httpx.ConnectError("test")
     monkeypatch.setattr(ai.httpx,"AsyncClient",BrokenClient)
     data=send(client,"Подсветка кухни")
