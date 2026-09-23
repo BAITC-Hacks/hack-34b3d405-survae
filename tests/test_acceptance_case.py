@@ -27,7 +27,8 @@ def case_client(monkeypatch):
 @pytest.mark.xfail(strict=True, raises=AssertionError,
                    reason="BE-01: free search does not enforce explicit product parameters")
 def test_explicit_lamp_parameters_exclude_incompatible_results(case_client):
-    result = case_client.post("/api/chat", json={"message": "лампа E27 3000 К"})
+    # Supply all three parameters; asking for missing power is valid behavior.
+    result = case_client.post("/api/chat", json={"message": "лампа E27 до 40 Вт 3000 К"})
     assert result.status_code == 200
     products = result.json()["products"]
     assert any(p["article"] == "DEMO-LED-W" for p in products)
