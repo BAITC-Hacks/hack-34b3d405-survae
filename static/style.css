@@ -31,4 +31,5 @@
 
 .mobile-build-version{display:none}@media(max-width:800px){.mobile-build-version{display:inline;font-size:10px;color:#60746c}}
 
-#context-dialog{border:1px solid #cbded1;border-radius:16px;padding:24px;width:min(500px,calc(100% - 28px));max-height:85dvh;overflow:auto;color:#244336}#context-dialog::backdrop{background:#102a2866}#context-dialog p{font-size:14px;line-height:1.6}#context-dialog blockquote{margin:16px 0;padding:12px;background:#f0f6f1;overflow-wrap:anywhere;white-space:pre-wrap;max-height:20vh;overflow:auto}#context-dialog button{display:block;width:100%;margin-top:10px}
+
+.context-help{display:block;margin:0 auto 8px;padding:6px 12px;border:1px solid #cbded1;border-radius:8px;background:#f5faf6;color:#245a3d;font-size:12px;min-height:36px}.context-help:disabled{opacity:.55;cursor:wait}
